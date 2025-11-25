@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -40,15 +40,18 @@
           Car, MapPin, Calendar, CheckSquare, Navigation, Info, Fuel, 
           AlertTriangle, Edit2, Save, Sparkles, Plus, Trash2, Image as ImageIcon, 
           X, Clock, Map as MapIcon, Route, Wallet, ShoppingBag, DollarSign, 
-          Utensils, Train, Gift, Search, Camera
+          Utensils, Train, Gift, Search, Camera, ExternalLink
         } from 'lucide-react';
 
         const App = () => {
           const [activeTab, setActiveTab] = useState('itinerary');
-          const [selectedDay, setSelectedDay] = useState(1);
+          const [selectedDay, setSelectedDay] = useState(3); // Default to Day 3 to show changes
           const [isEditing, setIsEditing] = useState(false);
           const [selectedRoute, setSelectedRoute] = useState(null);
           
+          // --- 倒數計時 State ---
+          const [daysRemaining, setDaysRemaining] = useState(0);
+
           const [isModalEditing, setIsModalEditing] = useState(false);
           const [modalEditData, setModalEditData] = useState({ image: '', note: '', desc: '', noteImage: '' });
 
@@ -57,6 +60,7 @@
           const [shoppingList, setShoppingList] = useState([
             { id: 1, text: '合利他命', checked: false, image: '', note: '要買大罐的' },
             { id: 2, text: '東京香蕉', checked: false, image: '', note: '機場免稅店買' },
+            { id: 3, text: '少林山達摩', checked: false, image: '', note: '左眼畫珠許願' },
           ]);
           const [selectedShoppingItem, setSelectedShoppingItem] = useState(null);
           const [shoppingModalData, setShoppingModalData] = useState({ image: '', note: '' });
@@ -77,7 +81,7 @@
           const [expenses, setExpenses] = useState([]);
           const [expenseForm, setExpenseForm] = useState({ id: null, title: '', amount: '', category: 'food', time: '' });
 
-          // --- 10天行程資料 (根據圖片匯入) ---
+          // --- 10天行程資料 ---
           const initialItinerary = [
             {
               day: 1,
@@ -90,32 +94,42 @@
             },
             {
               day: 2,
-              title: "茨城名勝巡禮",
+              title: "茨城美食與名勝",
               date: "2026-02-09",
               routes: [
-                { id: 201, time: "10:00", location: "袋田瀑布", note: "日本三大名瀑之一", type: "spot", image: "https://image.pollinations.ai/prompt/Fukuroda%20Falls%20winter%20ice?width=600&height=400&nologo=true", desc: "冬季時瀑布會結冰，形成壯觀的「冰瀑」景色。" },
-                { id: 202, time: "14:00", location: "偕樂園", note: "日本三名園，賞梅勝地", type: "spot", image: "https://image.pollinations.ai/prompt/Kairakuen%20garden%20winter%20plum?width=600&height=400&nologo=true", desc: "2月正值梅花季，園內3000株梅花盛開，景色絕美。" },
-                { id: 203, time: "18:00", location: "水戶市", note: "住宿水戶市區", type: "hotel", image: "https://image.pollinations.ai/prompt/Mito%20City%20night%20view?width=600&height=400&nologo=true", desc: "茨城縣廳所在地，晚上可品嚐著名的水戶納豆料理。" }
+                { id: 201, time: "08:00", location: "成田機場 (出發)", note: "取車出發，前往袋田瀑布", type: "start", image: "https://image.pollinations.ai/prompt/Narita%20Airport%20car%20rental?width=600&height=400&nologo=true", desc: "取車出發，預計車程約 2.5 小時，自駕最順暢。" },
+                { id: 202, time: "10:30", location: "袋田瀑布", note: "日本三大名瀑，欣賞冰瀑", type: "spot", image: "https://image.pollinations.ai/prompt/Fukuroda%20Falls%20winter%20ice?width=600&height=400&nologo=true", desc: "日本三大名瀑之一。2月有機會看到壯觀的「冰瀑」(完全結冰或部分結冰)。建議停留 1 小時。" },
+                { id: 203, time: "12:45", location: "水戶市區 (午餐)", note: "必吃鮟鱇魚鍋", type: "spot", image: "https://image.pollinations.ai/prompt/Ankou%20Nabe%20Anglerfish%20Hot%20Pot?width=600&height=400&nologo=true", desc: "享用茨城冬季名物「鮟鱇魚鍋」，膠原蛋白豐富，暖身又美味。" },
+                { id: 204, time: "14:30", location: "偕樂園", note: "賞梅與好文亭", type: "spot", image: "https://image.pollinations.ai/prompt/Kairakuen%20garden%20winter%20plum?width=600&height=400&nologo=true", desc: "日本三大名園。2月上旬至中旬是「水戶梅花祭」初期，早開品種可能已綻放。可參觀好文亭，從高處眺望千波湖。" },
+                { id: 205, time: "17:00", location: "御宿野乃 水戶", note: "Dormy Inn系列，溫泉與拉麵", type: "hotel", image: "https://image.pollinations.ai/prompt/Dormy%20Inn%20Mito%20onsen%20hotel?width=600&height=400&nologo=true", desc: "全館塌塌米風格，特色是頂樓的天然溫泉「香梅之湯」及免費宵夜夜鳴拉麵。" },
+                { id: 206, time: "18:30", location: "水戶市 (晚餐)", note: "享用常陸牛料理", type: "spot", image: "https://image.pollinations.ai/prompt/Hitachi%20Wagyu%20beef%20dinner?width=600&height=400&nologo=true", desc: "品嚐茨城縣引以為傲的「常陸牛」，肉質細膩，適合燒肉或壽喜燒。" }
               ]
             },
             {
               day: 3,
-              title: "日光世界遺產",
+              title: "結緣神社與日光絕景",
               date: "2026-02-10",
               routes: [
-                { id: 301, time: "10:00", location: "華嚴瀑布", note: "中禪寺湖流出的壯觀瀑布", type: "spot", image: "https://image.pollinations.ai/prompt/Kegon%20Falls%20winter%20snow?width=600&height=400&nologo=true", desc: "搭乘電梯到觀瀑台，近距離感受97公尺落差的震撼。" },
-                { id: 302, time: "14:00", location: "日光東照宮", note: "祭祀德川家康的神社", type: "spot", image: "https://image.pollinations.ai/prompt/Nikko%20Toshogu%20Shrine%20winter%20snow?width=600&height=400&nologo=true", desc: "絢爛豪華的陽明門與「非禮勿視、非禮勿聽、非禮勿言」三猿雕刻是必看重點。" },
-                { id: 303, time: "18:00", location: "宇都宮市", note: "晚餐必吃宇都宮餃子", type: "hotel", image: "https://image.pollinations.ai/prompt/Utsunomiya%20gyoza%20restaurant?width=600&height=400&nologo=true", desc: "著名的餃子之都，車站周邊有許多名店。" }
+                { id: 301, time: "08:30", location: "水戶市 (出發)", note: "前往笠間市 (約50分)", type: "start", image: "https://image.pollinations.ai/prompt/Dormy%20Inn%20Mito%20exterior?width=600&height=400&nologo=true", desc: "從 Dormy Inn 退房出發，前往笠間市。" },
+                { id: 302, time: "09:20", location: "常陸國出雲大社", note: "祈求結緣，巨大注連繩", type: "spot", image: "https://image.pollinations.ai/prompt/Hitachinokuni%20Izumo%20Taisha%20shimenawa?width=600&height=400&nologo=true", desc: "以祈求結緣聞名，擁有巨大的注連繩。參拜約 40-60 分鐘。之後經由「北關東自動車道」前往日光 (約 1.5 - 2 小時)。" },
+                { id: 303, time: "12:20", location: "日光市區 (午餐)", note: "日光名物「湯波」料理", type: "spot", image: "https://image.pollinations.ai/prompt/Nikko%20Yuba%20cuisine%20japan?width=600&height=400&nologo=true", desc: "享用日光名物「湯波 (Yuba/豆皮) 料理」，口感細緻美味。" },
+                { id: 304, time: "13:30", location: "日光東照宮", note: "世界遺產，三猿與眠貓", type: "spot", image: "https://image.pollinations.ai/prompt/Nikko%20Toshogu%20Yomeimon%20Gate%20winter?width=600&height=400&nologo=true", desc: "世界遺產，供奉德川家康。必看「三猿」、「眠貓」與陽明門。建議停留 1.5 小時。" },
+                { id: 305, time: "15:40", location: "華嚴瀑布", note: "中禪寺湖與冰瀑", type: "spot", image: "https://image.pollinations.ai/prompt/Kegon%20Falls%20frozen%20winter?width=600&height=400&nologo=true", desc: "經過「伊呂波坂」上山(冬季易結冰請小心)。搭乘電梯至觀瀑台欣賞壯觀的冰瀑 (2月營業至 16:30)。" },
+                { id: 306, time: "17:30", location: "東橫INN 宇都宮站前", note: "辦理入住", type: "hotel", image: "https://image.pollinations.ai/prompt/Toyoko%20Inn%20hotel%20exterior?width=600&height=400&nologo=true", desc: "經由「日光宇都宮道路」下山前往市區。辦理入住，稍作休息。" },
+                { id: 307, time: "18:30", location: "宇都宮 (晚餐)", note: "宇都宮餃子名店巡禮", type: "spot", image: "https://image.pollinations.ai/prompt/Utsunomiya%20Gyoza%20dumplings?width=600&height=400&nologo=true", desc: "體驗「宇都宮餃子」名店巡禮，品嚐煎餃、水餃與炸餃子。" }
               ]
             },
             {
               day: 4,
-              title: "群馬溫泉與山道",
+              title: "群馬達摩與雪國酒造",
               date: "2026-02-11",
               routes: [
-                { id: 401, time: "10:00", location: "伊香保溫泉", note: "著名的石段街", type: "spot", image: "https://image.pollinations.ai/prompt/Ikaho%20Onsen%20stone%20steps%20winter?width=600&height=400&nologo=true", desc: "沿著365階石階漫步，兩旁是復古的溫泉饅頭店與射擊遊戲店。" },
-                { id: 402, time: "14:00", location: "榛名山", note: "頭文字D秋名山原型", type: "spot", image: "https://image.pollinations.ai/prompt/Mount%20Haruna%20Lake%20winter?width=600&height=400&nologo=true", desc: "冬季榛名湖可能結冰，山路駕駛請注意路面凍結。" },
-                { id: 403, time: "18:00", location: "高崎市", note: "達摩娃娃的故鄉", type: "hotel", image: "https://image.pollinations.ai/prompt/Takasaki%20city%20daruma?width=600&height=400&nologo=true", desc: "群馬縣最大的城市，交通便利。" }
+                { id: 401, time: "09:00", location: "宇都宮 (出發)", note: "前往群馬 (北關東道)", type: "start", image: "https://image.pollinations.ai/prompt/Utsunomiya%20city%20street%20morning?width=600&height=400&nologo=true", desc: "睡飽一點再出發。經由「北關東自動車道」前往群馬。" },
+                { id: 402, time: "10:30", location: "少林山達摩寺", note: "達摩發源地", type: "spot", image: "https://image.pollinations.ai/prompt/Shorinzan%20Darumaji%20Temple%20Daruma%20dolls?width=600&height=400&nologo=true", desc: "達摩發源地，可以在此購買達摩許願。本堂堆滿達摩的景象很特別。" },
+                { id: 403, time: "11:30", location: "高崎市區 (午餐)", note: "登利平鳥飯或高崎義大利麵", type: "spot", image: "https://image.pollinations.ai/prompt/Takasaki%20Pasta%20large%20portion?width=600&height=400&nologo=true", desc: "推薦嘗試群馬名物：1. 登利平 (Torihei) 鳥飯 (便當或定食都好吃) 2. 高崎義大利麵 (份量超大，口味獨特)。" },
+                { id: 404, time: "14:30", location: "魚沼之里", note: "八海山酒造複合設施", type: "spot", image: "https://image.pollinations.ai/prompt/Uonuma%20no%20Sato%20snow%20winter%20Hakkaisan?width=600&height=400&nologo=true", desc: "經關越道穿過長隧道進入雪國。參觀巨大的「雪室」（天然冰箱儲酒），還有很美的咖啡廳和伴手禮店。" },
+                { id: 405, time: "16:00", location: "坂戶城 (Sakadojo)", note: "南魚沼溫泉旅館", type: "hotel", image: "https://image.pollinations.ai/prompt/Sakadojo%20Ryokan%20Minamiuonuma%20onsen?width=600&height=400&nologo=true", desc: "提早辦理入住，先去泡溫泉暖身，享受悠閒時光。" },
+                { id: 406, time: "18:00", location: "南魚沼市 (晚餐)", note: "計程車或代駕前往餐廳", type: "spot", image: "https://image.pollinations.ai/prompt/Minamiuonuma%20Koshihikari%20Rice%20Dinner?width=600&height=400&nologo=true", desc: "享用南魚沼特產越光米與地酒。建議搭乘計程車或代駕以便飲酒。" }
               ]
             },
             {
@@ -185,6 +199,14 @@
             const now = new Date();
             const timeString = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             setExpenseForm(prev => ({ ...prev, time: timeString }));
+
+            // --- 計算倒數日期 ---
+            const targetDate = new Date("2026-02-08T00:00:00");
+            const diffTime = targetDate - now;
+            // 如果日期已過，設為 0
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            setDaysRemaining(diffDays > 0 ? diffDays : 0);
+
           }, []);
 
           const getDayOfWeek = (dateString) => {
@@ -264,7 +286,7 @@
             return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
           };
 
-          // --- UI Rendering (Simplified structure for clarity) ---
+          // --- UI Rendering ---
           const renderHeader = () => (
             <header className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4 pt-8 shadow-lg">
               <div className="flex justify-between items-center">
@@ -274,17 +296,15 @@
                   </h1>
                   <p className="text-blue-100 text-xs mt-1">2/8 - 2/17 (10 Days)</p>
                 </div>
-                <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm min-w-[70px]">
                   <span className="text-xs block text-center">倒數</span>
-                  <span className="font-bold block text-center">約440天</span>
+                  <span className="font-bold block text-center">{daysRemaining}天</span>
                 </div>
               </div>
             </header>
           );
 
           // ... (Reuse previous render methods: renderItinerary, renderMap, renderWallet, renderChecklist, renderDrivingInfo) ...
-          // Note: Logic inside renderItinerary needs to map over the updated itinerary state.
-          // Since the render methods use state 'itinerary', 'expenses', etc., they will automatically pick up the new initialItinerary.
           
           const renderItinerary = () => {
             const currentDayData = itinerary[selectedDay - 1];
@@ -298,14 +318,14 @@
                 <div className="px-4">
                   <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
                     <div className="bg-gradient-to-r from-blue-50 to-white p-4 border-b border-blue-100 flex justify-between items-center">
-                       <div className="flex-1">
-                         <div className="text-blue-600 font-bold mb-1 flex items-center gap-2">
-                           <Calendar size={14}/> 
-                           {isEditing ? <input type="date" value={currentDayData.date} onChange={(e) => handleDayDateChange(e.target.value)} className="bg-white border rounded px-2 py-0.5 text-sm"/> : <span className="text-sm">{currentDayData.date} <span className="text-blue-400">{getDayOfWeek(currentDayData.date)}</span></span>}
-                         </div>
-                         {isEditing ? <input type="text" value={currentDayData.title} onChange={(e) => handleDayTitleChange(e.target.value)} className="w-full text-lg font-bold border rounded px-2 py-1"/> : <h2 className="text-xl font-bold text-gray-800">{currentDayData.title}</h2>}
-                       </div>
-                       <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full ${isEditing ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{isEditing ? <Save size={18} /> : <Edit2 size={18} />}</button>
+                        <div className="flex-1">
+                          <div className="text-blue-600 font-bold mb-1 flex items-center gap-2">
+                            <Calendar size={14}/> 
+                            {isEditing ? <input type="date" value={currentDayData.date} onChange={(e) => handleDayDateChange(e.target.value)} className="bg-white border rounded px-2 py-0.5 text-sm"/> : <span className="text-sm">{currentDayData.date} <span className="text-blue-400">{getDayOfWeek(currentDayData.date)}</span></span>}
+                          </div>
+                          {isEditing ? <input type="text" value={currentDayData.title} onChange={(e) => handleDayTitleChange(e.target.value)} className="w-full text-lg font-bold border rounded px-2 py-1"/> : <h2 className="text-xl font-bold text-gray-800">{currentDayData.title}</h2>}
+                        </div>
+                        <button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full ${isEditing ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{isEditing ? <Save size={18} /> : <Edit2 size={18} />}</button>
                     </div>
                     <div className="p-4">
                       <div className="space-y-0 relative">
@@ -337,11 +357,23 @@
                 {selectedRoute && (
                   <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedRoute(null)}>
                     <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                       <div className="relative h-48 bg-gray-200 flex-shrink-0">
+                       <div className="relative h-48 bg-gray-200 flex-shrink-0 group">
                           {modalEditData.image || selectedRoute.image ? <img src={isModalEditing ? modalEditData.image : selectedRoute.image} alt={selectedRoute.location} className="w-full h-full object-cover" /> : <div className="w-full h-full flex flex-col items-center justify-center text-gray-400"><ImageIcon size={48} className="mb-2 opacity-50"/><span className="text-xs">尚無圖片</span></div>}
                           <button onClick={() => setSelectedRoute(null)} className="absolute top-3 right-3 bg-black/30 text-white p-1 rounded-full"><X size={20} /></button>
                           <button onClick={() => isModalEditing ? saveModalChanges() : setIsModalEditing(true)} className={`absolute top-3 right-12 p-1 rounded-full backdrop-blur-md z-10 ${isModalEditing ? 'bg-green-500 text-white' : 'bg-black/30 text-white'}`}>{isModalEditing ? <Save size={20} /> : <Edit2 size={20} />}</button>
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-10"><h3 className="text-white font-bold text-2xl">{selectedRoute.location}</h3></div>
+                          
+                          {/* Google Search Image Button */}
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(selectedRoute.location)}`, '_blank');
+                            }}
+                            className="absolute bottom-4 right-4 bg-white/90 hover:bg-white text-gray-700 px-3 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-1 z-20 transition-all backdrop-blur-sm"
+                          >
+                            <Search size={14} /> 網上找圖
+                          </button>
+
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-10 pointer-events-none"><h3 className="text-white font-bold text-2xl">{selectedRoute.location}</h3></div>
                        </div>
                        <div className="p-5 overflow-y-auto flex-1">
                          {isModalEditing ? (
