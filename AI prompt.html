@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 提示詞庫</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f3f4f6; padding-bottom: 80px; }
+        .card-img { width: 100%; height: 200px; object-fit: cover; border-radius: 8px 8px 0 0; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <div class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
+        <h1 class="text-xl font-bold text-center">🎨 AI 繪圖提示詞庫</h1>
+    </div>
+
+    <div id="app" class="p-4 max-w-md mx-auto space-y-4">
+        <div id="empty-state" class="text-center text-gray-400 mt-10 hidden">
+            <p>還沒有資料，點擊下方按鈕新增！</p>
+        </div>
+    </div>
+
+    <div class="fixed bottom-6 right-6">
+        <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg text-3xl font-bold">+</button>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg w-full max-w-md p-6 shadow-xl">
+            <h2 class="text-xl font-bold mb-4">新增提示詞</h2>
+            
+            <label class="block text-sm font-medium text-gray-700">圖片連結 (URL)</label>
+            <input type="text" id="input-img" placeholder="貼上圖片網址..." class="mt-1 block w-full border border-gray-300 rounded-md p-2 mb-3">
+            
+            <label class="block text-sm font-medium text-gray-700">提示詞 (Prompts)</label>
+            <textarea id="input-prompt" rows="4" placeholder="輸入英文提示詞..." class="mt-1 block w-full border border-gray-300 rounded-md p-2 mb-4"></textarea>
+
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeModal()" class="px-4 py-2 text-gray-500 hover:text-gray-700">取消</button>
+                <button onclick="saveData()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">✅ 已複製到剪貼簿</div>
+
+    <script>
+        // 1. 初始化：讀取資料
+        let prompts = JSON.parse(localStorage.getItem('ai_prompts')) || [];
+        
+        function render() {
+            const app = document.getElementById('app');
+            const emptyState = document.getElementById('empty-state');
+            app.innerHTML = ''; // 清空畫面
+            
+            if (prompts.length === 0) {
+                app.appendChild(emptyState);
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            // 倒序排列，新的在上面
+            prompts.slice().reverse().forEach((item, index) => {
+                // 找出原始陣列中的正確索引
+                const originalIndex = prompts.length - 1 - index;
+                
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden';
+                
+                // 如果沒有圖片網址，顯示預設圖
+                const imgDisplay = item.img ? `<img src="${item.img}" class="card-img">` : `<div class="h-20 bg-gray-200 flex items-center justify-center text-gray-400">無圖片</div>`;
+
+                card.innerHTML = `
+                    ${imgDisplay}
+                    <div class="p-4">
+                        <div class="text-gray-800 text-sm mb-3 bg-gray-50 p-2 rounded border border-gray-100 font-mono break-all">${item.text}</div>
+                        <div class="flex justify-between items-center mt-2">
+                            <button onclick="deleteItem(${originalIndex})" class="text-red-400 text-sm hover:text-red-600">刪除</button>
+                            <button onclick="copyText('${item.text.replace(/'/g, "\\'")}')" class="bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-bold active:scale-95 transition-transform">📋 複製提示詞</button>
+                        </div>
+                    </div>
+                `;
+                app.appendChild(card);
+            });
+        }
+
+        // 2. 儲存資料
+        function saveData() {
+            const img = document.getElementById('input-img').value;
+            const text = document.getElementById('input-prompt').value;
+
+            if (!text) { alert('請至少輸入提示詞'); return; }
+
+            prompts.push({ img, text });
+            localStorage.setItem('ai_prompts', JSON.stringify(prompts));
+            
+            closeModal();
+            render();
+            
+            // 清空輸入框
+            document.getElementById('input-img').value = '';
+            document.getElementById('input-prompt').value = '';
+        }
+
+        // 3. 刪除資料
+        function deleteItem(index) {
+            if(confirm('確定要刪除這筆資料嗎？')) {
+                prompts.splice(index, 1);
+                localStorage.setItem('ai_prompts', JSON.stringify(prompts));
+                render();
+            }
+        }
+
+        // 4. 複製功能
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast();
+            });
+        }
+
+        // UI 控制函式
+        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // 啟動
+        render();
+    </script>
+</body>
+</html>
