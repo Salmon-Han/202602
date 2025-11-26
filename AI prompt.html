@@ -3,237 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 提示詞庫 (圖庫版)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>AI 提示詞圖書館</title>
     <style>
-        body { background-color: #f3f4f6; padding-bottom: 100px; }
-        .card-img { width: 100%; height: 200px; object-fit: cover; border-radius: 8px 8px 0 0; }
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100; }
-        .toast.show { opacity: 1; }
-        /* 讀取中的轉圈圈 */
-        .loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #3498db; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-left: 10px; display: none;}
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* 基礎設定 */
+        body { font-family: 'Microsoft JhengHei', sans-serif; background: #f4f4f9; padding: 20px; color: #333; }
+        h1 { text-align: center; margin-bottom: 30px; }
+
+        /* 卡片容器 (RWD 設計) */
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 卡片本體 */
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
+
+        /* 圖片區塊 */
+        .img-box {
+            width: 100%;
+            height: 200px; /* 固定高度 */
+            background-color: #eee;
+            position: relative;
+        }
+        .img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 裁切模式，保持比例填滿 */
+            display: block;
+        }
+
+        /* 文字內容區塊 */
+        .content { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+        .title { font-weight: bold; font-size: 1.1em; margin-bottom: 8px; color: #2c3e50; }
+        
+        /* 提示詞顯示區 */
+        .prompt-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 0.9em;
+            color: #555;
+            height: 80px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            font-family: monospace; /* 等寬字體較適合看代碼 */
+        }
+
+        /* 按鈕 */
+        .copy-btn {
+            margin-top: auto;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+        .copy-btn:hover { background-color: #357abd; }
+        .copy-btn:active { background-color: #2a5885; }
+
+        /* 狀態文字 */
+        #status { text-align: center; margin-top: 20px; color: #666; }
     </style>
 </head>
 <body>
 
-    <div class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10 flex justify-between items-center">
-        <h1 class="text-lg font-bold">🎨 AI 提示詞庫</h1>
-        <div class="space-x-1">
-            <button onclick="exportData()" class="bg-blue-500 hover:bg-blue-400 text-white text-xs px-3 py-2 rounded border border-blue-400">⬇ 備份</button>
-            <button onclick="document.getElementById('import-file').click()" class="bg-blue-500 hover:bg-blue-400 text-white text-xs px-3 py-2 rounded border border-blue-400">⬆ 還原</button>
-            <input type="file" id="import-file" style="display: none;" onchange="importData(this)">
-        </div>
-    </div>
-
-    <div id="app" class="p-4 max-w-md mx-auto space-y-4">
-        <div id="empty-state" class="text-center text-gray-400 mt-10 hidden">
-            <p>目前沒有資料</p>
-            <p class="text-sm mt-2">點擊右下角 + 從圖庫新增</p>
-        </div>
-    </div>
-
-    <div class="fixed bottom-6 right-6">
-        <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg text-3xl font-bold">+</button>
-    </div>
-
-    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-lg w-full max-w-md p-6 shadow-xl">
-            <h2 class="text-xl font-bold mb-4">新增提示詞</h2>
-            
-            <label class="block text-sm font-medium text-gray-700 mb-1">選擇圖片 (自動壓縮)</label>
-            <div class="flex items-center space-x-2 mb-4">
-                <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md border border-gray-300 w-full text-center">
-                    📁 點此開啟圖庫
-                    <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFileSelect(this)">
-                </label>
-                <div id="loading" class="loader"></div>
-            </div>
-            <img id="preview-img" class="w-full h-32 object-contain bg-gray-50 border border-gray-200 rounded mb-3 hidden">
-            <input type="hidden" id="base64-store">
-
-            <label class="block text-sm font-medium text-gray-700">提示詞 (Prompts)</label>
-            <textarea id="input-prompt" rows="4" placeholder="輸入英文提示詞..." class="mt-1 block w-full border border-gray-300 rounded-md p-2 mb-4"></textarea>
-
-            <div class="flex justify-end space-x-3">
-                <button onclick="closeModal()" class="px-4 py-2 text-gray-500 hover:text-gray-700">取消</button>
-                <button onclick="saveData()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">儲存</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="toast" class="toast">✅ 訊息</div>
+    <h1>🎨 AI 繪圖提示詞庫</h1>
+    <p id="status">正在讀取資料庫...</p>
+    <div class="container" id="app"></div>
 
     <script>
-        let prompts = JSON.parse(localStorage.getItem('ai_prompts')) || [];
-        
-        function render() {
-            const app = document.getElementById('app');
-            const emptyState = document.getElementById('empty-state');
-            app.innerHTML = '';
-            
-            if (prompts.length === 0) {
-                app.appendChild(emptyState);
-                emptyState.classList.remove('hidden');
+        // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+        // 請在此填入你的 Google Apps Script 網頁應用程式網址
+        const API_URL = '你的GAS網址'; 
+        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
+        async function fetchData() {
+            try {
+                if(API_URL === '你的GAS網址' || API_URL === '') {
+                    throw new Error("尚未設定 API 網址");
+                }
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                renderCards(data);
+            } catch (error) {
+                document.getElementById('status').innerHTML = 
+                    `讀取失敗。<br>1. 請檢查程式碼中的 API_URL 是否已填入。<br>2. 請確認 GAS 部署權限是否為「任何人 (Anyone)」。<br>錯誤訊息: ${error.message}`;
+                console.error(error);
+            }
+        }
+
+        function renderCards(data) {
+            const container = document.getElementById('app');
+            const status = document.getElementById('status');
+
+            if (data.length === 0) {
+                status.innerText = "資料庫目前是空的。";
                 return;
             }
-            emptyState.classList.add('hidden');
 
-            prompts.slice().reverse().forEach((item, index) => {
-                const originalIndex = prompts.length - 1 - index;
+            status.style.display = 'none'; // 隱藏讀取中文字
+
+            data.forEach(item => {
                 const card = document.createElement('div');
-                card.className = 'bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden';
+                card.className = 'card';
                 
-                // 判斷圖片顯示
-                let imgHtml = `<div class="h-20 bg-gray-200 flex items-center justify-center text-gray-400">無圖片</div>`;
-                if (item.img) {
-                    imgHtml = `<img src="${item.img}" class="card-img">`;
-                }
+                // 處理圖片連結 (自動轉換 Google Drive)
+                const imageUrl = convertImageLink(item.image);
+                
+                // 處理提示詞 (防止特殊符號破壞 HTML)
+                const safePrompt = escapeHtml(item.prompt);
+                const rawPrompt = item.prompt.replace(/'/g, "\\'"); // 給按鈕用的
 
                 card.innerHTML = `
-                    ${imgHtml}
-                    <div class="p-4">
-                        <div class="text-gray-800 text-sm mb-3 bg-gray-50 p-2 rounded border border-gray-100 font-mono break-all">${item.text}</div>
-                        <div class="flex justify-between items-center mt-2">
-                            <button onclick="deleteItem(${originalIndex})" class="text-red-400 text-sm hover:text-red-600">刪除</button>
-                            <button onclick="copyText(this)" data-text="${item.text.replace(/"/g, '&quot;')}" class="bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-bold active:scale-95 transition-transform">📋 複製</button>
-                        </div>
+                    <div class="img-box">
+                        <img src="${imageUrl}" loading="lazy" alt="${item.title}" onerror="this.onerror=null;this.src='https://via.placeholder.com/300?text=No+Image';">
+                    </div>
+                    <div class="content">
+                        <div class="title">${item.title || '無標題'}</div>
+                        <div class="prompt-box">${safePrompt}</div>
+                        <button class="copy-btn" onclick="copyText('${rawPrompt}')">複製提示詞</button>
                     </div>
                 `;
-                app.appendChild(card);
+                container.appendChild(card);
             });
         }
 
-        // --- 核心功能：圖片處理與壓縮 ---
-        function handleFileSelect(input) {
-            const file = input.files[0];
-            if (!file) return;
-
-            document.getElementById('loading').style.display = 'inline-block';
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    // 建立 Canvas 進行壓縮
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    // 設定最大寬度 (壓縮關鍵)
-                    const MAX_WIDTH = 500; 
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > MAX_WIDTH) {
-                        height *= MAX_WIDTH / width;
-                        width = MAX_WIDTH;
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    // 轉成 JPEG 格式，品質 0.7
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                    
-                    // 顯示預覽並存到隱藏欄位
-                    document.getElementById('preview-img').src = dataUrl;
-                    document.getElementById('preview-img').classList.remove('hidden');
-                    document.getElementById('base64-store').value = dataUrl;
-                    
-                    document.getElementById('loading').style.display = 'none';
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function saveData() {
-            const img = document.getElementById('base64-store').value;
-            const text = document.getElementById('input-prompt').value;
-
-            if (!text) { showToast('❌ 請輸入提示詞'); return; }
-
-            // 檢查儲存空間
-            try {
-                prompts.push({ img, text });
-                localStorage.setItem('ai_prompts', JSON.stringify(prompts));
-                closeModal();
-                render();
-                // 重置表單
-                document.getElementById('base64-store').value = '';
-                document.getElementById('input-prompt').value = '';
-                document.getElementById('preview-img').classList.add('hidden');
-                document.getElementById('file-input').value = ''; 
-                showToast('✅ 儲存成功');
-            } catch (e) {
-                showToast('⚠️ 儲存失敗！容量已滿');
-                alert('儲存空間已滿！因為這是在瀏覽器儲存，容量有限。請先刪除一些舊圖片，或是使用「備份」功能將舊資料存到電腦後，清除這裡的資料。');
-                // 回滾
-                prompts.pop();
+        // ★ 核心功能：轉換 Google Drive 連結為可預覽圖片
+        function convertImageLink(url) {
+            if (!url) return '';
+            // 檢查是否為 Google Drive 連結
+            if (url.includes('drive.google.com') && url.includes('/d/')) {
+                // 使用正則表達式抓取 ID
+                const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                if (match && match[1]) {
+                    // 轉換成直連預覽格式
+                    return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+                }
             }
+            return url; // 如果不是 Drive 連結，直接回傳原網址
         }
 
-        function deleteItem(index) {
-            if(confirm('確定要刪除嗎？')) {
-                prompts.splice(index, 1);
-                localStorage.setItem('ai_prompts', JSON.stringify(prompts));
-                render();
-            }
+        // 複製功能
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ 提示詞已複製！');
+            }).catch(err => {
+                alert('複製失敗，請手動複製');
+                console.error(err);
+            });
         }
 
-        function copyText(btn) {
-            const text = btn.getAttribute('data-text');
-            navigator.clipboard.writeText(text).then(() => showToast('✅ 已複製！'));
+        // HTML 跳脫字元 (安全性處理)
+        function escapeHtml(text) {
+            if (!text) return "";
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
 
-        // 備份功能
-        function exportData() {
-            if (prompts.length === 0) { showToast('沒有資料可備份'); return; }
-            const dataStr = JSON.stringify(prompts);
-            const blob = new Blob([dataStr], {type: "application/json"});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `ai_prompts_backup_${new Date().toISOString().slice(0,10)}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            showToast('⬇ 備份檔案下載中');
-        }
-
-        // 還原功能
-        function importData(input) {
-            const file = input.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (Array.isArray(data)) {
-                        if(confirm('匯入將會「覆蓋」現有資料，建議先備份目前資料。確定要匯入嗎？')) {
-                            prompts = data;
-                            localStorage.setItem('ai_prompts', JSON.stringify(prompts));
-                            render();
-                            showToast('✅ 還原成功！');
-                        }
-                    } else { alert('檔案格式錯誤'); }
-                } catch (err) { alert('無法讀取檔案'); }
-            };
-            reader.readAsText(file);
-            input.value = ''; 
-        }
-
-        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2000);
-        }
-
-        render();
+        fetchData();
     </script>
 </body>
 </html>
