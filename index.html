@@ -31,7 +31,7 @@
         }
         .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
 
-        /* 左側連接線 - 現在更細且靠左 */
+        /* 左側連接線 */
         .travel-line {
             background-image: linear-gradient(to bottom, #52525b 50%, transparent 50%);
             background-size: 2px 10px;
@@ -122,7 +122,6 @@
             <div class="h-64 w-full bg-zinc-800 relative flex-shrink-0 group">
                 <img id="modal-image" src="" alt="Spot" class="w-full h-full object-cover opacity-0 transition-opacity duration-500 ease-in-out">
                 <div class="absolute inset-0 bg-gradient-to-t from-[#27272a] via-transparent to-transparent opacity-90"></div>
-                <div id="modal-tags" class="absolute bottom-4 left-6 flex gap-2 flex-wrap z-10"></div>
             </div>
 
             <div class="p-6 overflow-y-auto no-scrollbar bg-[#27272a]">
@@ -150,32 +149,48 @@
 
     <!-- Logic -->
     <script>
-        // --- 圖片網址對照表 (使用靜態 Unsplash 連結以確保顯示) ---
+        // --- 圖片網址對照表 (Updated) ---
         const imageMap = {
-            "捷星航空": "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "成田機場": "https://images.unsplash.com/photo-1542296332-2e4426582ad7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "東橫INN 成田機場 本館": "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            // Day 1 & 2 (Previous Updates)
+            "捷星航空": "https://pic.pimg.tw/cynthia1126/1488611750-3170712331_n.jpg?v=1488611759",
+            "起飛 TPE": "https://pic.pimg.tw/cynthia1126/1488611750-3170712331_n.jpg?v=1488611759", 
+            "成田機場": "https://www.japanholiday.net/wp-content/uploads/2023/07/international-airport21.jpg",
+            "抵達 NRT": "https://www.japanholiday.net/wp-content/uploads/2023/07/international-airport21.jpg",
+            "東橫INN 成田機場 本館": "https://pix10.agoda.net/hotelImages/444950/-1/780e9bd5f8f18b2dcf14a6f5f93ae6bf.jpg",
+            "入住：東橫INN 成田機場 本館": "https://pix10.agoda.net/hotelImages/444950/-1/780e9bd5f8f18b2dcf14a6f5f93ae6bf.jpg",
             "Toyota Rent a Car": "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "袋田瀑布": "https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "鮟鱇魚鍋": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "偕樂園": "https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "常陸牛": "https://images.unsplash.com/photo-1615937413365-c36c56209f44?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "Dormy Inn 水戶": "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "常陸國出雲大社": "https://images.unsplash.com/photo-1528360983277-13d9b152c611?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "日光東照宮": "https://images.unsplash.com/photo-1565516709673-86835a09276d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "華嚴瀑布": "https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "宇都宮餃子": "https://images.unsplash.com/photo-1563245316-d97e55ce1e18?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "袋田瀑布": "https://s3-ap-northeast-1.amazonaws.com/thegate/2020/10/16/16/54/30/Fukuroda%20fall.jpg",
+            "鮟鱇魚鍋": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSQW7yv76Nf0eR3URaQiXaoBvRzZ3MvE0XxiwSFPCeOhT-Dc45pMK-vql8&s=10",
+            "偕樂園": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8TRakOvmIuhQXgO5hicanVgOI_2mMQxzNAIWm38VA7aTlvrsE3Vx-tPw&s=10",
+            "常陸牛": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSweVKlMMjDkJNdPBXCqgKpk5I6MmQFXTYTYzfNXAAORnFRKKcHm3kNvXU&s=10",
+            "Dormy Inn 水戶": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6JGDujuJDjwCMOVjlSAch3yLQY6cWCZazRGThirRVZ6pm8TKcPl2mffF3&s=10",
+            "入住：Dormy Inn 水戶": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6JGDujuJDjwCMOVjlSAch3yLQY6cWCZazRGThirRVZ6pm8TKcPl2mffF3&s=10",
+            "常陸國出雲大社": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS5h9P8w9gZYtcK4zwUF6cEUe9hqU4qHNoK4eeoMtbpMQ_Nj1phRZSIDokS&s=10",
+            
+            // ---------------------------------------------------------------------------
+            // --- 本次更新項目 (Day 3) ---
+            "日光東照宮": "https://hoshinoresorts.com/jp/guide/wp-content/uploads/2017/11/%E7%9A%87%E5%98%89%E9%96%80%E3%82%88%E3%82%8A%E6%9C%9B%E3%82%80%E6%9C%AC%E6%AE%BF.jpg",
+            "華嚴瀑布": "https://static.gltjp.com/glt/data/article/12000/11999/20190201_145438_c53c670b_w1920.webp",
+            "宇都宮餃子": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRPS3E3BBFHOjeNHUraj9Q--CVGl-WHkEDVhRKWVvKsfNPND1ICRJrPfGDv&s=10",
+            "東橫INN 宇都宮站前": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcShp4qCE0ngPVRrQs7Qeq6Cwm5_s1ZQNQrj7M9h3pA2OO62OK-FoeshWo8&s=10",
+            "入住：東橫INN 宇都宮站前": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcShp4qCE0ngPVRrQs7Qeq6Cwm5_s1ZQNQrj7M9h3pA2OO62OK-FoeshWo8&s=10",
+            // ---------------------------------------------------------------------------
+
             "少林山達摩寺": "https://images.unsplash.com/photo-1589463236756-3b320d5c43d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
             "登利平 鳥飯": "https://images.unsplash.com/photo-1604547900898-d1be8b757041?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
             "魚沼之里": "https://images.unsplash.com/photo-1598155523122-38423bb4d693?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "南魚沼晚餐": "https://images.unsplash.com/photo-1594966723225-b40cb03112b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
             "坂戶城": "https://images.unsplash.com/photo-1560200353-ce0a76b1d438?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
             "三条鍛冶道場": "https://images.unsplash.com/photo-1504198266287-9b5d39886958?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
             "彌彥神社": "https://images.unsplash.com/photo-1528360983277-13d9b152c611?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
             "Pier Bandai": "https://images.unsplash.com/photo-1534483509549-066311df9785?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
             "醬汁豬排丼": "https://images.unsplash.com/photo-1606756087545-f0949d883709?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "東橫INN 新潟站前": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "雪地自駕": "https://images.unsplash.com/photo-1491002052546-bf38f186af56?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
             "Enza Cafe": "https://images.unsplash.com/photo-1552566626-52f8b828add9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
             "地獄谷野猿公苑": "https://images.unsplash.com/photo-1516805844901-09cdb584a863?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
             "味噌家": "https://images.unsplash.com/photo-1591814468981-1b9201097241?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "東橫INN 長野站東口": "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
             "穂高神社": "https://images.unsplash.com/photo-1528360983277-13d9b152c611?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
             "信州蕎麥麵": "https://images.unsplash.com/photo-1519985176271-adb104622cd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
             "立石公園": "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
@@ -195,7 +210,6 @@
         function getImage(key, type) {
             if (imageMap[key]) return imageMap[key];
             for (const mapKey in imageMap) { if (key.includes(mapKey)) return imageMap[mapKey]; }
-            // 預設圖片 (確保有圖可顯)
             const fallbacks = { 
                 'food': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', 
                 'stay': 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', 
@@ -223,10 +237,10 @@
                     timeline: [
                         { time: "08:30", title: "出發：東橫INN 成田機場", desc: "退房出發", type: "start", travelNext: { time: "30m", dist: "機場店" } },
                         { time: "09:00", title: "取車出發", desc: "Toyota Rent a Car 成田機場店", longDesc: "這是本次自駕之旅的起點。您預約的是 Toyota Sienta 7人座車型，空間靈活適合家庭。取車時請務必與店員確認車身外觀是否有舊傷，並確認是否已安裝 ETC 卡以及針對二月天氣的「雪地輪胎 (Winter Tires)」，這對於後續前往日光和長野山區至關重要。", type: "car", link: "Toyota Rent a Car Narita Airport", travelNext: { time: "1h 30m", dist: "100km" } },
-                        { time: "10:30", title: "袋田瀑布", desc: "日本三大名瀑，欣賞壯觀冰瀑。", longDesc: "與華嚴瀑布、那智瀑布並列為「日本三大名瀑」。瀑布高120米、寬73米，分四段飛瀉而下。二月是觀賞「冰瀑」的最佳季節，嚴寒使瀑布水流凍結成冰，形成如雕塑般壯麗的白色冰壁，景色令人屏息。", type: "sight", link: "袋田瀑布", tags: ["必看"], travelNext: { time: "1h", dist: "55km" } },
-                        { time: "12:45", title: "午餐：鮟鱇魚鍋", desc: "推薦：元祖鮟鱇魚鍋 山翠。", longDesc: "茨城縣冬季不可錯過的極品美味。「山翠」是水戶的老字號名店，這裡的鮟鱇魚鍋以將魚肝溶入味噌湯底的「多布汁（Dobujiru）」風味聞名，湯頭濃郁鮮甜，富含膠原蛋白，能溫暖身心。", type: "food", tags: ["必吃"], link: "山翠 水戶", travelNext: { time: "10m", dist: "市區" } },
+                        { time: "10:30", title: "袋田瀑布", desc: "日本三大名瀑，欣賞壯觀冰瀑。", longDesc: "與華嚴瀑布、那智瀑布並列為「日本三大名瀑」。瀑布高120米、寬73米，分四段飛瀉而下。二月是觀賞「冰瀑」的最佳季節，嚴寒使瀑布水流凍結成冰，形成如雕塑般壯麗的白色冰壁，景色令人屏息。", type: "sight", link: "袋田瀑布", travelNext: { time: "1h", dist: "55km" } },
+                        { time: "12:45", title: "午餐：鮟鱇魚鍋", desc: "推薦：元祖鮟鱇魚鍋 山翠。", longDesc: "茨城縣冬季不可錯過的極品美味。「山翠」是水戶的老字號名店，這裡的鮟鱇魚鍋以將魚肝溶入味噌湯底的「多布汁（Dobujiru）」風味聞名，湯頭濃郁鮮甜，富含膠原蛋白，能溫暖身心。", type: "food", link: "山翠 水戶", travelNext: { time: "10m", dist: "市區" } },
                         { time: "14:30", title: "偕樂園", desc: "日本三大名園，水戶梅花祭。", longDesc: "日本三大名園之一，由水戶藩主德川齊昭所建。二月上旬正值著名的「水戶梅花祭」初期，園內種植了約3000株、100個品種的梅花。推薦登上園內的「好文亭」，從三樓樂壽樓可以俯瞰千波湖與梅林的絕美景色。", type: "sight", link: "偕樂園", travelNext: { time: "15m", dist: "市區" } },
-                        { time: "18:30", title: "晚餐：常陸牛", desc: "推薦：飯島餐廳 或 和牛庵。", longDesc: "常陸牛是茨城縣產的高級黑毛和牛，以肉質細膩、脂肪甘甜著稱。「飯島餐廳」由肉舖直營，能以實惠價格品嚐頂級牛排；「和牛庵」則提供氣氛優雅的日式庭園用餐環境，推薦嘗試他們的牛排御膳。", type: "food", tags: ["必吃"], link: "Restaurant Iijima Mito", travelNext: { time: "10m", dist: "回飯店" } },
+                        { time: "18:30", title: "晚餐：常陸牛", desc: "推薦：飯島餐廳 或 和牛庵。", longDesc: "常陸牛是茨城縣產的高級黑毛和牛，以肉質細膩、脂肪甘甜著稱。「飯島餐廳」由肉舖直營，能以實惠價格品嚐頂級牛排；「和牛庵」則提供氣氛優雅的日式庭園用餐環境，推薦嘗試他們的牛排御膳。", type: "food", link: "Restaurant Iijima Mito", travelNext: { time: "10m", dist: "回飯店" } },
                         { time: "20:00", title: "入住：Dormy Inn 水戶", desc: "享受天然溫泉與夜鳴拉麵。", longDesc: "Dormy Inn 系列飯店以高品質服務聞名。這裡最大的亮點是頂樓的天然溫泉「香梅之湯」，泡湯後還能享用免費的宵夜「夜鳴拉麵（醬油拉麵）」。", type: "stay", link: "Dormy Inn Mito" }
                     ]
                 },
@@ -237,8 +251,8 @@
                         { time: "08:30", title: "出發：Dormy Inn 水戶", desc: "退房出發", type: "start", travelNext: { time: "50m", dist: "35km" } },
                         { time: "09:20", title: "常陸國出雲大社", desc: "祈求結緣，巨大注連繩。", longDesc: "這是島根縣出雲大社的分社，以祈求良緣靈驗而聞名。最引人注目的是拜殿上懸掛的超巨大注連繩，重達6噸，氣勢非凡。參拜方式遵循古法「二禮、四拍手、一禮」。", type: "sight", link: "常陸國出雲大社", travelNext: { time: "1h 30m", dist: "90km" } },
                         { time: "13:30", title: "日光東照宮", desc: "世界遺產，必看三猿、眠貓。", longDesc: "供奉江戶幕府初代將軍德川家康的神社，建築風格金碧輝煌，雕刻極盡奢華。必看亮點包括神廄舍上的「非禮勿視、非禮勿聽、非禮勿言」三猿雕刻，以及通往奧社入口上方的國寶「眠貓」。", type: "sight", link: "日光東照宮", travelNext: { time: "40m", dist: "18km" } },
-                        { time: "15:40", title: "華嚴瀑布", desc: "經伊呂波坂上山，欣賞冰瀑。", longDesc: "中禪寺湖水從97公尺高的岩壁傾瀉而下，是日光最具代表性的瀑布。一定要搭乘電梯下到觀瀑台，近距離感受水花飛濺的魄力。前往途中的「伊呂波坂」有48個急彎，冬季路面可能結冰，請務必小心駕駛。", type: "sight", tags: ["注意駕駛"], link: "華嚴瀑布", travelNext: { time: "1h", dist: "50km" } },
-                        { time: "18:30", title: "晚餐：宇都宮餃子", desc: "推薦：來らっせ (Kirasse)。", longDesc: "宇都宮被稱為日本的餃子之都。如果您有選擇困難症，推薦直接去「來らっせ (Kirasse) 本店」。這裡集合了當地五家最有名的人氣店（如Minmin、Menmen），讓您可以一次點齊不同口味的餃子進行評比。", type: "food", tags: ["必吃"], link: "Kirasse Main Store", travelNext: { time: "10m", dist: "市區" } },
+                        { time: "15:40", title: "華嚴瀑布", desc: "經伊呂波坂上山，欣賞冰瀑。", longDesc: "中禪寺湖水從97公尺高的岩壁傾瀉而下，是日光最具代表性的瀑布。一定要搭乘電梯下到觀瀑台，近距離感受水花飛濺的魄力。前往途中的「伊呂波坂」有48個急彎，冬季路面可能結冰，請務必小心駕駛。", type: "sight", link: "華嚴瀑布", travelNext: { time: "1h", dist: "50km" } },
+                        { time: "18:30", title: "晚餐：宇都宮餃子", desc: "推薦：來らっせ (Kirasse)。", longDesc: "宇都宮被稱為日本的餃子之都。如果您有選擇困難症，推薦直接去「來らっせ (Kirasse) 本店」。這裡集合了當地五家最有名的人氣店（如Minmin、Menmen），讓您可以一次點齊不同口味的餃子進行評比。", type: "food", link: "Kirasse Main Store", travelNext: { time: "10m", dist: "市區" } },
                         { time: "20:00", title: "入住：東橫INN 宇都宮站前", desc: "車站旁便利住宿。", longDesc: "位於JR宇都宮站西口步行可達的距離，周邊生活機能完善。飯店提供立體機械式停車場，若車位已滿，櫃檯人員會親切指引至附近的合作平面停車場。", type: "stay", link: "Toyoko Inn Utsunomiya" }
                     ]
                 },
@@ -247,10 +261,10 @@
                     location: "宇都宮 ➜ 南魚沼", weather: "-2°C 大雪",
                     timeline: [
                         { time: "09:00", title: "出發：東橫INN 宇都宮", desc: "前往群馬", type: "start", travelNext: { time: "1h 30m", dist: "90km" } },
-                        { time: "10:30", title: "少林山達摩寺", desc: "達摩發源地，購買許願達摩。", longDesc: "群馬縣高崎市是日本「緣起達摩」的發源地。這座寺廟依山而建，本堂堆滿了信徒還願的大小達摩，景象壯觀且獨特。您可以在此購買眉毛代表鶴與龜的達摩，畫上左眼許下心願。", type: "sight", tags: ["必買"], link: "少林山達摩寺", travelNext: { time: "20m", dist: "8km" } },
-                        { time: "11:30", title: "午餐：登利平 鳥飯", desc: "群馬縣民的靈魂美食。", longDesc: "提到群馬美食，絕對不能錯過「登利平」。他們的「鳥飯便當（竹）」是縣民從小吃到大的靈魂食物。薄切雞胸肉淋上秘傳的甜鹹醬汁，鋪滿在熱騰騰的白飯上，簡單卻令人回味無窮。", type: "food", tags: ["必吃"], link: "登利平 本店", travelNext: { time: "1h 40m", dist: "110km" } },
+                        { time: "10:30", title: "少林山達摩寺", desc: "達摩發源地，購買許願達摩。", longDesc: "群馬縣高崎市是日本「緣起達摩」的發源地。這座寺廟依山而建，本堂堆滿了信徒還願的大小達摩，景象壯觀且獨特。您可以在此購買眉毛代表鶴與龜的達摩，畫上左眼許下心願。", type: "sight", link: "少林山達摩寺", travelNext: { time: "20m", dist: "8km" } },
+                        { time: "11:30", title: "午餐：登利平 鳥飯", desc: "群馬縣民的靈魂美食。", longDesc: "提到群馬美食，絕對不能錯過「登利平」。他們的「鳥飯便當（竹）」是縣民從小吃到大的靈魂食物。薄切雞胸肉淋上秘傳的甜鹹醬汁，鋪滿在熱騰騰的白飯上，簡單卻令人回味無窮。", type: "food", link: "登利平 本店", travelNext: { time: "1h 40m", dist: "110km" } },
                         { time: "14:30", title: "魚沼之里", desc: "參觀雪室與品酒。", longDesc: "由知名的清酒品牌「八海山」所經營的複合設施。最大亮點是利用冬季積雪來冷藏清酒的巨大「雪室」。園區內還有精美的麵包店、咖啡廳與伴手禮店，建築風格現代且融入雪國自然景觀。", type: "sight", link: "魚沼之里", travelNext: { time: "20m", dist: "10km" } },
-                        { time: "18:00", title: "南魚沼晚餐", desc: "推薦：欅亭(洋食) 或 魚沼釜蔵。", longDesc: "既然來到南魚沼，一定要品嚐這裡產的「越光米」，被譽為日本第一。推薦「欅亭」，雖然是洋食屋，但他們的蛋包飯配上頂級越光米，口感絕佳；或是「魚沼釜蔵」品嚐釜飯與在地鄉土料理。", type: "food", tags: ["必吃"], link: "Keyakitei Minamiuonuma", travelNext: { time: "15m", dist: "溫泉街" } },
+                        { time: "18:00", title: "南魚沼晚餐", desc: "推薦：欅亭(洋食) 或 魚沼釜蔵。", longDesc: "既然來到南魚沼，一定要品嚐這裡產的「越光米」，被譽為日本第一。推薦「欅亭」，雖然是洋食屋，但他們的蛋包飯配上頂級越光米，口感絕佳；或是「魚沼釜蔵」品嚐釜飯與在地鄉土料理。", type: "food", link: "Keyakitei Minamiuonuma", travelNext: { time: "15m", dist: "溫泉街" } },
                         { time: "19:30", title: "入住：坂戶城 (六日町溫泉)", desc: "雪國溫泉與榻榻米房。", longDesc: "充滿歷史風情的溫泉旅館，與戰國武將直江兼續有關。您可以在露天溫泉中一邊賞雪一邊泡湯，體驗雪國特有的浪漫。建議預約飯店的早晚餐，品嚐使用大量在地食材製作的會席料理。", type: "stay", link: "Sakadojo Minamiuonuma" }
                     ]
                 },
@@ -259,10 +273,10 @@
                     location: "南魚沼 ➜ 新潟", weather: "3°C 雨夾雪",
                     timeline: [
                         { time: "08:15", title: "出發：坂戶城", desc: "雪地駕駛請小心", type: "start", travelNext: { time: "1h 30m", dist: "80km" } },
-                        { time: "09:45", title: "三条鍛冶道場", desc: "職人指導製作拆信刀體驗。", longDesc: "新潟燕三條地區以世界級的金屬工藝聞名。在這裡，您可以穿上圍裙，在職人的手把手指導下，親自體驗將一根五寸釘燒紅、敲打、研磨，最後變成一把專屬於您的拆信刀，非常有紀念價值。", type: "activity", tags: ["體驗"], link: "Sanjo Blacksmith Dojo", travelNext: { time: "30m", dist: "20km" } },
+                        { time: "09:45", title: "三条鍛冶道場", desc: "職人指導製作拆信刀體驗。", longDesc: "新潟燕三條地區以世界級的金屬工藝聞名。在這裡，您可以穿上圍裙，在職人的手把手指導下，親自體驗將一根五寸釘燒紅、敲打、研磨，最後變成一把專屬於您的拆信刀，非常有紀念價值。", type: "activity", link: "Sanjo Blacksmith Dojo", travelNext: { time: "30m", dist: "20km" } },
                         { time: "13:00", title: "彌彥神社", desc: "新潟最強能量景點。", longDesc: "越後國一之宮，自古以來就是著名的能量景點（Power Spot）。神社座落在彌彥山腳下，四周被古老的森林環繞，氣氛莊嚴肅穆。參拜後若天氣許可，可搭乘纜車登上彌彥山頂，眺望日本海。", type: "sight", link: "彌彥神社", travelNext: { time: "50m", dist: "40km" } },
-                        { time: "15:30", title: "Pier Bandai", desc: "萬代市場，海鮮伴手禮採買。", longDesc: "新潟市區最熱鬧的觀光市場。這裡有著名的「迴轉壽司 弁慶」，能以實惠價格吃到佐渡島直送的新鮮海產。此外，也能在此買到新潟特產的越光米、清酒以及各式海鮮乾貨。", type: "shopping", tags: ["必買"], link: "Pier Bandai", travelNext: { time: "15m", dist: "市區" } },
-                        { time: "18:00", title: "晚餐：醬汁豬排丼", desc: "推薦：炸豬排太郎。", longDesc: "這不是一般的豬排飯！新潟市的「醬汁豬排丼（Tare-katsu）」特色是不加蛋液封住，而是將剛炸好的薄切豬排，快速浸泡在特製的甜鹹醬油醬汁中，然後鋪在白飯上，酥脆又入味。", type: "food", tags: ["必吃"], link: "Tonkatsu Taro Niigata", travelNext: { time: "10m", dist: "車站前" } },
+                        { time: "15:30", title: "Pier Bandai", desc: "萬代市場，海鮮伴手禮採買。", longDesc: "新潟市區最熱鬧的觀光市場。這裡有著名的「迴轉壽司 弁慶」，能以實惠價格吃到佐渡島直送的新鮮海產。此外，也能在此買到新潟特產的越光米、清酒以及各式海鮮乾貨。", type: "shopping", link: "Pier Bandai", travelNext: { time: "15m", dist: "市區" } },
+                        { time: "18:00", title: "晚餐：醬汁豬排丼", desc: "推薦：炸豬排太郎。", longDesc: "這不是一般的豬排飯！新潟市的「醬汁豬排丼（Tare-katsu）」特色是不加蛋液封住，而是將剛炸好的薄切豬排，快速浸泡在特製的甜鹹醬油醬汁中，然後鋪在白飯上，酥脆又入味。", type: "food", link: "Tonkatsu Taro Niigata", travelNext: { time: "10m", dist: "車站前" } },
                         { time: "20:00", title: "入住：東橫INN 新潟站前", desc: "新潟車站步行可達。", longDesc: "位於繁華的新潟站萬代口側，周邊餐廳與居酒屋林立，非常方便。飯店設施標準且乾淨，是探索新潟市區夜生活的絕佳據點。", type: "stay", link: "Toyoko Inn Niigata Ekimae" }
                     ]
                 },
@@ -272,8 +286,8 @@
                     timeline: [
                         { time: "09:00", title: "出發：東橫INN 新潟站前", desc: "長途移動至地獄谷", type: "start", travelNext: { time: "2h 30m", dist: "160km" } },
                         { time: "11:30", title: "午餐：Enza Cafe", desc: "步道入口旁，推薦雞白湯拉麵。", longDesc: "位於地獄谷野猿公苑步道入口處的時髦咖啡廳。在寒冷的天氣爬山前後，來一碗熱騰騰、湯頭濃郁的雞白湯拉麵，或是酥脆的炸雞，絕對是暖身首選。", type: "food", link: "Enza Cafe Jigokudani", travelNext: { time: "30m", dist: "步行" } },
-                        { time: "13:20", title: "地獄谷野猿公苑", desc: "世界唯一雪猴泡溫泉。", longDesc: "這是一個能看到野生日本獼猴（雪猴）在雪地中享受天然溫泉的奇蹟之地。從停車場需步行約30分鐘的山路才能抵達，看著猴子們滿臉通紅、表情陶醉的模樣，非常療癒。", type: "sight", tags: ["必看"], link: "Jigokudani Monkey Park", travelNext: { time: "50m", dist: "35km" } },
-                        { time: "18:00", title: "晚餐：味噌家", desc: "長野站旁，濃郁味噌拉麵。", longDesc: "長野縣是全日本味噌產量第一的地方。這家「味噌家」拉麵就在長野車站旁，使用信州味噌製作湯頭，濃郁卻不死鹹，搭配大火快炒的豆芽菜與Q彈粗麵，香氣十足。", type: "food", tags: ["必吃"], link: "Misoya Nagano Station", travelNext: { time: "5m", dist: "步行" } },
+                        { time: "13:20", title: "地獄谷野猿公苑", desc: "世界唯一雪猴泡溫泉。", longDesc: "這是一個能看到野生日本獼猴（雪猴）在雪地中享受天然溫泉的奇蹟之地。從停車場需步行約30分鐘的山路才能抵達，看著猴子們滿臉通紅、表情陶醉的模樣，非常療癒。", type: "sight", link: "Jigokudani Monkey Park", travelNext: { time: "50m", dist: "35km" } },
+                        { time: "18:00", title: "晚餐：味噌家", desc: "長野站旁，濃郁味噌拉麵。", longDesc: "長野縣是全日本味噌產量第一的地方。這家「味噌家」拉麵就在長野車站旁，使用信州味噌製作湯頭，濃郁卻不死鹹，搭配大火快炒的豆芽菜與Q彈粗麵，香氣十足。", type: "food", link: "Misoya Nagano Station", travelNext: { time: "5m", dist: "步行" } },
                         { time: "19:30", title: "入住：東橫INN 長野站東口", desc: "長野站東口直達。", longDesc: "位於較為安靜的長野站東口，對於自駕旅客來說進出較為方便。飯店旁邊就有便利商店，距離車站內的商場也僅需步行幾分鐘。", type: "stay", link: "Toyoko Inn Nagano Station" }
                     ]
                 },
@@ -283,9 +297,9 @@
                     timeline: [
                         { time: "09:00", title: "出發：東橫INN 長野", desc: "前往安曇野", type: "start", travelNext: { time: "1h 15m", dist: "60km" } },
                         { time: "10:15", title: "穂高神社", desc: "交通安全守護神。", longDesc: "這裡是日本北阿爾卑斯山的總鎮守，更是著名的「交通安全」守護神。身為自駕旅行者，一定要來此參拜，祈求接下來的旅程行車平安順利。", type: "sight", link: "Hotaka Shrine", travelNext: { time: "45m", dist: "40km" } },
-                        { time: "11:30", title: "午餐：信州蕎麥麵", desc: "推薦：Soba-dokoro Kamijo。", longDesc: "安曇野以清澈的水質聞名，製作出的蕎麥麵特別香氣撲鼻。這裡推薦點「天惠蕎麥麵」，裡面加入了大量當地產的蔬菜、山菜以及一顆溫泉蛋，口感豐富有層次。", type: "food", tags: ["必吃"], link: "Soba-dokoro Kamijo", travelNext: { time: "1h", dist: "60km" } },
-                        { time: "14:00", title: "立石公園", desc: "《你的名字》系守湖原型。", longDesc: "位於諏訪湖東側的高地公園。這裡可以俯瞰整個諏訪湖的壯麗全景。據說這裡是電影《你的名字》中「系守湖」以及黃昏分身之時場景的重要靈感來源，是粉絲必朝聖之地。", type: "sight", tags: ["聖地巡禮"], link: "Tateishi Park Suwa", travelNext: { time: "1h", dist: "60km" } },
-                        { time: "18:30", title: "晚餐：甲府餺飥麵", desc: "推薦：小作。", longDesc: "山梨縣最具代表性的鄉土料理。「餺飥（Hoto）」是一種用小麥粉製成的寬扁麵條，與南瓜、馬鈴薯、紅蘿蔔等蔬菜在味噌湯底中燉煮。湯頭濃稠甘甜，非常有飽足感且暖胃。", type: "food", tags: ["必吃"], link: "Kosaku Kofu Station", travelNext: { time: "10m", dist: "市區" } },
+                        { time: "11:30", title: "午餐：信州蕎麥麵", desc: "推薦：Soba-dokoro Kamijo。", longDesc: "安曇野以清澈的水質聞名，製作出的蕎麥麵特別香氣撲鼻。這裡推薦點「天惠蕎麥麵」，裡面加入了大量當地產的蔬菜、山菜以及一顆溫泉蛋，口感豐富有層次。", type: "food", link: "Soba-dokoro Kamijo", travelNext: { time: "1h", dist: "60km" } },
+                        { time: "14:00", title: "立石公園", desc: "《你的名字》系守湖原型。", longDesc: "位於諏訪湖東側的高地公園。這裡可以俯瞰整個諏訪湖的壯麗全景。據說這裡是電影《你的名字》中「系守湖」以及黃昏分身之時場景的重要靈感來源，是粉絲必朝聖之地。", type: "sight", link: "Tateishi Park Suwa", travelNext: { time: "1h", dist: "60km" } },
+                        { time: "18:30", title: "晚餐：甲府餺飥麵", desc: "推薦：小作。", longDesc: "山梨縣最具代表性的鄉土料理。「餺飥（Hoto）」是一種用小麥粉製成的寬扁麵條，與南瓜、馬鈴薯、紅蘿蔔等蔬菜在味噌湯底中燉煮。湯頭濃稠甘甜，非常有飽足感且暖胃。", type: "food", link: "Kosaku Kofu Station", travelNext: { time: "10m", dist: "市區" } },
                         { time: "20:00", title: "入住：Dormy Inn 甲府丸之內", desc: "頂樓溫泉勝運之湯。", longDesc: "這間 Dormy Inn 擁有極佳的景觀。頂樓的天然溫泉「勝運之湯」可以一邊泡湯，一邊眺望甲府市的夜景，天氣好且白天時甚至能看見富士山。這裡同樣提供免費的夜鳴拉麵。", type: "stay", link: "Dormy Inn Kofu Marunouchi" }
                     ]
                 },
@@ -294,10 +308,10 @@
                     location: "甲府 ➜ 箱根", weather: "5°C 多雲",
                     timeline: [
                         { time: "09:00", title: "出發：Dormy Inn 甲府", desc: "前往河口湖", type: "start", travelNext: { time: "1h", dist: "40km" } },
-                        { time: "10:00", title: "大石公園", desc: "河口湖畔，富士山絕佳拍攝點。", longDesc: "位於河口湖北岸的公園，是拍攝富士山與湖水同框的經典機位。二月的空氣乾燥清澈，能看見完整富士山頭的機率非常高。公園內還有漂亮的步道與伴手禮店。", type: "sight", tags: ["拍照"], link: "Oishi Park", travelNext: { time: "20m", dist: "10km" } },
-                        { time: "11:30", title: "午餐：吉田烏龍麵", desc: "推薦：蔵ノ介。", longDesc: "這是富士吉田市的特色麵食，以「日本最硬」著稱。手打的麵條極粗且咬勁十足，通常會搭配馬肉與水煮高麗菜，湯頭則是醬油與味噌的混合風味，非常獨特。", type: "food", tags: ["必吃"], link: "Kuranosuke Yoshida Udon", travelNext: { time: "1h 30m", dist: "50km" } },
+                        { time: "10:00", title: "大石公園", desc: "河口湖畔，富士山絕佳拍攝點。", longDesc: "位於河口湖北岸的公園，是拍攝富士山與湖水同框的經典機位。二月的空氣乾燥清澈，能看見完整富士山頭的機率非常高。公園內還有漂亮的步道與伴手禮店。", type: "sight", link: "Oishi Park", travelNext: { time: "20m", dist: "10km" } },
+                        { time: "11:30", title: "午餐：吉田烏龍麵", desc: "推薦：蔵ノ介。", longDesc: "這是富士吉田市的特色麵食，以「日本最硬」著稱。手打的麵條極粗且咬勁十足，通常會搭配馬肉與水煮高麗菜，湯頭則是醬油與味噌的混合風味，非常獨特。", type: "food", link: "Kuranosuke Yoshida Udon", travelNext: { time: "1h 30m", dist: "50km" } },
                         { time: "14:00", title: "箱根神社", desc: "水中鳥居，平和的鳥居。", longDesc: "箱根著名的能量景點。最知名的就是矗立在蘆之湖水面上的紅色「平和的鳥居」，是遊客必拍的打卡點。沿著杉木林參道向上走，可以抵達莊嚴的神社本殿，祈求開運除厄。", type: "sight", link: "Hakone Shrine", travelNext: { time: "40m", dist: "20km" } },
-                        { time: "18:00", title: "晚餐：小田原關東煮", desc: "推薦：小田原關東煮本店。", longDesc: "小田原是魚板的故鄉。這裡的關東煮不同於便利商店，使用的是當地老舖製作的高級魚漿製品，湯頭清淡優雅，能吃出食材原味。本店由古民家茶屋改建，氣氛極佳，務必預約。", type: "food", tags: ["預約"], link: "Odawara Oden Honten", travelNext: { time: "15m", dist: "市區" } },
+                        { time: "18:00", title: "晚餐：小田原關東煮", desc: "推薦：小田原關東煮本店。", longDesc: "小田原是魚板的故鄉。這裡的關東煮不同於便利商店，使用的是當地老舖製作的高級魚漿製品，湯頭清淡優雅，能吃出食材原味。本店由古民家茶屋改建，氣氛極佳，務必預約。", type: "food", link: "Odawara Oden Honten", travelNext: { time: "15m", dist: "市區" } },
                         { time: "20:00", title: "入住：小田原住宿", desc: "小田原車站周邊。", longDesc: "小田原是箱根與東京之間的重要交通樞紐。住宿於車站周邊，方便隔天前往鎌倉或返回東京。車站附近有許多藥妝店與餐廳。", type: "stay", link: "Odawara Station" }
                     ]
                 },
@@ -306,8 +320,8 @@
                     location: "小田原 ➜ 橫濱", weather: "9°C 晴朗",
                     timeline: [
                         { time: "09:30", title: "出發：小田原", desc: "前往湘南海岸", type: "start", travelNext: { time: "1h", dist: "30km" } },
-                        { time: "10:30", title: "鎌倉高校前", desc: "灌籃高手平交道。", longDesc: "江之島電鐵的一個小站，因動畫《灌籃高手》片頭曲中，櫻木花道與晴子揮手的場景而爆紅。平交道背景就是蔚藍的大海，非常夢幻。不過此處車流量大，拍照時請務必注意安全。", type: "sight", tags: ["打卡"], link: "Kamakurakokomae Station", travelNext: { time: "10m", dist: "2km" } },
-                        { time: "11:00", title: "午餐：Pacific DRIVE-IN", desc: "七里濱海景夏威夷料理。", longDesc: "位於七里濱海岸停車場旁的超人氣網紅餐廳。主打夏威夷蒜味蝦飯與鬆餅。如果天氣好，坐在戶外露台區，可以直接欣賞到江之島與富士山的絕美海景。", type: "food", tags: ["必吃"], link: "Pacific DRIVE-IN", travelNext: { time: "20m", dist: "5km" } },
+                        { time: "10:30", title: "鎌倉高校前", desc: "灌籃高手平交道。", longDesc: "江之島電鐵的一個小站，因動畫《灌籃高手》片頭曲中，櫻木花道與晴子揮手的場景而爆紅。平交道背景就是蔚藍的大海，非常夢幻。不過此處車流量大，拍照時請務必注意安全。", type: "sight", link: "Kamakurakokomae Station", travelNext: { time: "10m", dist: "2km" } },
+                        { time: "11:00", title: "午餐：Pacific DRIVE-IN", desc: "七里濱海景夏威夷料理。", longDesc: "位於七里濱海岸停車場旁的超人氣網紅餐廳。主打夏威夷蒜味蝦飯與鬆餅。如果天氣好，坐在戶外露台區，可以直接欣賞到江之島與富士山的絕美海景。", type: "food", link: "Pacific DRIVE-IN", travelNext: { time: "20m", dist: "5km" } },
                         { time: "13:00", title: "鎌倉大佛", desc: "高德院國寶大佛。", longDesc: "這尊高達11.3米的露天青銅阿彌陀如來坐像，是鎌倉的象徵。大佛神態慈祥，經歷了數百年的風雨依然屹立不搖。您可以購票進入大佛的中空內部，參觀其鑄造構造。", type: "sight", link: "Kamakura Daibutsu", travelNext: { time: "45m", dist: "25km" } },
                         { time: "18:00", title: "晚餐：橫濱中華街", desc: "日本最大唐人街。", longDesc: "日本三大中華街之首，充滿了異國情調。推薦「橫濱大飯店」的高級點單式吃到飽，可以品嚐北京烤鴨與小籠包；若是嗜辣者，則推薦「景德鎮」的正宗四川麻婆豆腐。", type: "food", link: "Yokohama Chinatown", travelNext: { time: "10m", dist: "市區" } },
                         { time: "20:00", title: "入住：東橫INN 橫濱體育場前", desc: "就在中華街旁。", longDesc: "地理位置極佳，飯店對面就是橫濱體育場，旁邊就是中華街的入口。距離著名的橫濱港未來區、紅磚倉庫等景點也不遠。", type: "stay", link: "Toyoko Inn Yokohama Stadium" }
@@ -427,6 +441,7 @@
                             <div class="inline-flex items-center gap-2 px-2 py-1 rounded bg-zinc-800/50 border border-zinc-700/50 text-[10px] text-zinc-500 font-mono">
                                 <i data-lucide="chevrons-down" class="w-3 h-3"></i>
                                 <span>${item.travelNext.time}</span>
+                                ${item.travelNext.dist ? `<span class="w-px h-2 bg-zinc-600"></span><span>${item.travelNext.dist}</span>` : ''}
                             </div>
                         </div>
                     `;
@@ -446,7 +461,6 @@
                                 <div class="flex justify-between items-start mb-1.5">
                                     <h3 class="text-[16px] ${isStart ? 'font-medium text-zinc-400' : 'font-bold text-zinc-100'} leading-tight tracking-tight">${item.title}</h3>
                                 </div>
-                                ${item.tags ? `<div class="flex gap-1.5 mb-2">${item.tags.map(t => `<span class="text-[10px] px-1.5 py-0.5 rounded border border-white/10 bg-white/5 text-zinc-300">${t}</span>`).join('')}</div>` : ''}
                                 <p class="text-[13px] text-zinc-400 line-clamp-2 leading-relaxed font-normal">${item.desc}</p>
                             </div>
                         </div>
@@ -543,9 +557,6 @@
             } else {
                 navBtn.classList.add('hidden'); navBtn.classList.remove('flex');
             }
-
-            const tagsContainer = document.getElementById('modal-tags');
-            tagsContainer.innerHTML = item.tags ? item.tags.map(t => `<span class="text-[11px] px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-white shadow-sm font-bold tracking-wider">${t}</span>`).join('') : '';
 
             detailModal.classList.remove('hidden'); detailModal.classList.add('flex');
         }
