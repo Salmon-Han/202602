@@ -3,569 +3,884 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 關東自駕深度旅</title>
-    
+    <title>2026 關東自駕遊 App</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
-
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'jp-black': '#121212',
+                        'jp-dark': '#1e1e1e',
+                        'jp-gray': '#2c2c2c',
+                        'jp-light': '#e5e5e5',
+                        'jp-red': '#b91c1c', 
+                        'jp-gold': '#c5a059',
+                        'jp-indigo': '#312e81',
+                        'jp-accent': '#d4af37',
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    },
+                    animation: {
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                    },
+                    keyframes: {
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body {
-            font-family: 'Zen Kaku Gothic New', 'Noto Sans TC', sans-serif;
-            background-color: #18181b; /* Zinc 900 */
-            color: #f4f4f5; /* Zinc 100 */
-            -webkit-tap-highlight-color: transparent;
-        }
+        body { background-color: #121212; color: #e5e5e5; -webkit-tap-highlight-color: transparent; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass-panel { background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .card-bg-gradient { background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
         
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-slide-up { animation: slideUp 0.3s ease-out forwards; }
-
-        /* 左側連接線 */
-        .travel-line {
-            background-image: linear-gradient(to bottom, #52525b 50%, transparent 50%);
-            background-size: 2px 10px;
-            background-repeat: repeat-y;
-        }
+        /* Loading Spinner */
+        .spinner { border: 3px solid rgba(255,255,255,0.1); border-left-color: #c5a059; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="pb-28 antialiased selection:bg-rose-500/30">
+<body>
+    <div id="root"></div>
 
-    <!-- Header -->
-    <header class="sticky top-0 z-40 bg-[#18181b]/95 backdrop-blur-md border-b border-zinc-700 shadow-md">
-        <div class="px-5 py-4 flex justify-between items-center max-w-md mx-auto">
-            <div>
-                <h1 class="text-xl font-bold tracking-wider text-white">2026 冬の関東旅</h1>
-                <p class="text-[11px] text-zinc-400 font-mono tracking-[0.15em] uppercase">Tokyo • Niigata • Hakone</p>
-            </div>
-            <div class="w-10 h-10 rounded-full bg-rose-600 flex items-center justify-center text-white font-bold text-sm shadow-lg border-2 border-rose-400/30">
-                JP
-            </div>
-        </div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
 
-        <!-- Day Selector -->
-        <div id="day-selector" class="flex overflow-x-auto gap-3 pb-4 px-5 max-w-md mx-auto no-scrollbar scroll-smooth">
-            <!-- JS Injected -->
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="max-w-md mx-auto px-5 pt-6 min-h-screen">
-        
-        <!-- Itinerary View -->
-        <div id="itinerary-view" class="transition-opacity duration-300">
-            <div id="day-header" class="mb-6">
-                <!-- JS Injected -->
-            </div>
-            <!-- Timeline Container -->
-            <div id="timeline-container" class="space-y-0 relative pl-1 pb-10">
-                <!-- JS Injected -->
-            </div>
-        </div>
-
-        <!-- Info View -->
-        <div id="info-view" class="hidden animate-slide-up space-y-5">
-             <!-- JS Injected -->
-        </div>
-
-        <!-- Budget View -->
-        <div id="budget-view" class="hidden animate-slide-up">
-             <!-- JS Injected -->
-        </div>
-
-    </main>
-
-    <!-- Bottom Nav -->
-    <nav class="fixed bottom-0 left-0 w-full bg-[#18181b] border-t border-zinc-700 z-50 pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.3)]">
-        <div class="max-w-md mx-auto flex justify-around items-center h-20 px-4">
-            <button onclick="switchTab('itinerary')" class="nav-btn group flex flex-col items-center justify-center w-20 h-full gap-1.5" data-tab="itinerary">
-                <div class="p-1.5 rounded-xl transition-colors group-active:bg-zinc-800">
-                    <i data-lucide="map" class="w-6 h-6 text-rose-500 transition-transform group-active:scale-95 duration-200"></i>
-                </div>
-                <span class="text-[11px] font-bold text-rose-500 tracking-wide">行程</span>
-            </button>
-            <button onclick="switchTab('info')" class="nav-btn group flex flex-col items-center justify-center w-20 h-full gap-1.5" data-tab="info">
-                <div class="p-1.5 rounded-xl transition-colors group-active:bg-zinc-800">
-                    <i data-lucide="info" class="w-6 h-6 text-zinc-400 transition-transform group-active:scale-95 duration-200"></i>
-                </div>
-                <span class="text-[11px] font-medium text-zinc-400 tracking-wide">資訊</span>
-            </button>
-            <button onclick="switchTab('budget')" class="nav-btn group flex flex-col items-center justify-center w-20 h-full gap-1.5" data-tab="budget">
-                <div class="p-1.5 rounded-xl transition-colors group-active:bg-zinc-800">
-                    <i data-lucide="wallet" class="w-6 h-6 text-zinc-400 transition-transform group-active:scale-95 duration-200"></i>
-                </div>
-                <span class="text-[11px] font-medium text-zinc-400 tracking-wide">預算</span>
-            </button>
-        </div>
-    </nav>
-
-    <!-- Modal -->
-    <div id="detail-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
-        <div class="relative w-full max-w-sm bg-[#27272a] rounded-[2rem] shadow-2xl overflow-hidden border border-zinc-600 transform transition-all scale-100 flex flex-col max-h-[85vh]">
-            
-            <button onclick="closeModal()" class="absolute top-4 right-4 z-20 p-2.5 bg-black/50 rounded-full text-white backdrop-blur-md hover:bg-black/70 transition-colors border border-white/20">
-                <i data-lucide="x" class="w-5 h-5"></i>
-            </button>
-
-            <!-- Image Container -->
-            <div class="h-64 w-full bg-zinc-800 relative flex-shrink-0 group">
-                <img id="modal-image" src="" alt="Spot" class="w-full h-full object-cover opacity-0 transition-opacity duration-500 ease-in-out">
-                <div class="absolute inset-0 bg-gradient-to-t from-[#27272a] via-transparent to-transparent opacity-90"></div>
-            </div>
-
-            <div class="p-6 overflow-y-auto no-scrollbar bg-[#27272a]">
-                <h2 id="modal-title" class="text-2xl font-bold text-white mb-3 flex items-center leading-tight tracking-tight"></h2>
-                
-                <div class="flex items-center text-rose-300 text-xs mb-6 font-mono bg-rose-950/40 w-fit px-3 py-1.5 rounded-lg border border-rose-800/50">
-                    <i data-lucide="clock" class="w-4 h-4 mr-2"></i>
-                    <span id="modal-time" class="font-bold"></span>
-                </div>
-                
-                <div class="bg-zinc-800/50 p-5 rounded-2xl border border-zinc-700 mb-8">
-                    <h4 class="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.1em] mb-3 flex items-center">
-                        <i data-lucide="book-open" class="w-3 h-3 mr-1.5"></i> 導遊介紹
-                    </h4>
-                    <p id="modal-desc" class="text-[15px] text-zinc-200 leading-7 font-normal text-justify"></p>
-                </div>
-
-                <a id="modal-nav-btn" href="#" target="_blank" class="w-full py-4 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white rounded-xl font-bold flex items-center justify-center transition-all shadow-lg active:scale-[0.98]">
-                    <i data-lucide="navigation" class="w-5 h-5 mr-2"></i>
-                    開啟 Google 導航
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Logic -->
-    <script>
-        // --- 圖片網址對照表 (Updated) ---
-        const imageMap = {
-            // Day 1 & 2 (Previous Updates)
-            "捷星航空": "https://pic.pimg.tw/cynthia1126/1488611750-3170712331_n.jpg?v=1488611759",
-            "起飛 TPE": "https://pic.pimg.tw/cynthia1126/1488611750-3170712331_n.jpg?v=1488611759", 
-            "成田機場": "https://www.japanholiday.net/wp-content/uploads/2023/07/international-airport21.jpg",
-            "抵達 NRT": "https://www.japanholiday.net/wp-content/uploads/2023/07/international-airport21.jpg",
-            "東橫INN 成田機場 本館": "https://pix10.agoda.net/hotelImages/444950/-1/780e9bd5f8f18b2dcf14a6f5f93ae6bf.jpg",
-            "入住：東橫INN 成田機場 本館": "https://pix10.agoda.net/hotelImages/444950/-1/780e9bd5f8f18b2dcf14a6f5f93ae6bf.jpg",
-            "Toyota Rent a Car": "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "袋田瀑布": "https://s3-ap-northeast-1.amazonaws.com/thegate/2020/10/16/16/54/30/Fukuroda%20fall.jpg",
-            "鮟鱇魚鍋": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSQW7yv76Nf0eR3URaQiXaoBvRzZ3MvE0XxiwSFPCeOhT-Dc45pMK-vql8&s=10",
-            "偕樂園": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8TRakOvmIuhQXgO5hicanVgOI_2mMQxzNAIWm38VA7aTlvrsE3Vx-tPw&s=10",
-            "常陸牛": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSweVKlMMjDkJNdPBXCqgKpk5I6MmQFXTYTYzfNXAAORnFRKKcHm3kNvXU&s=10",
-            "Dormy Inn 水戶": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6JGDujuJDjwCMOVjlSAch3yLQY6cWCZazRGThirRVZ6pm8TKcPl2mffF3&s=10",
-            "入住：Dormy Inn 水戶": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6JGDujuJDjwCMOVjlSAch3yLQY6cWCZazRGThirRVZ6pm8TKcPl2mffF3&s=10",
-            "常陸國出雲大社": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS5h9P8w9gZYtcK4zwUF6cEUe9hqU4qHNoK4eeoMtbpMQ_Nj1phRZSIDokS&s=10",
-            
-            // ---------------------------------------------------------------------------
-            // --- 本次更新項目 (Day 3) ---
-            "日光東照宮": "https://hoshinoresorts.com/jp/guide/wp-content/uploads/2017/11/%E7%9A%87%E5%98%89%E9%96%80%E3%82%88%E3%82%8A%E6%9C%9B%E3%82%80%E6%9C%AC%E6%AE%BF.jpg",
-            "華嚴瀑布": "https://static.gltjp.com/glt/data/article/12000/11999/20190201_145438_c53c670b_w1920.webp",
-            "宇都宮餃子": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRPS3E3BBFHOjeNHUraj9Q--CVGl-WHkEDVhRKWVvKsfNPND1ICRJrPfGDv&s=10",
-            "東橫INN 宇都宮站前": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcShp4qCE0ngPVRrQs7Qeq6Cwm5_s1ZQNQrj7M9h3pA2OO62OK-FoeshWo8&s=10",
-            "入住：東橫INN 宇都宮站前": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcShp4qCE0ngPVRrQs7Qeq6Cwm5_s1ZQNQrj7M9h3pA2OO62OK-FoeshWo8&s=10",
-            // ---------------------------------------------------------------------------
-
-            "少林山達摩寺": "https://images.unsplash.com/photo-1589463236756-3b320d5c43d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "登利平 鳥飯": "https://images.unsplash.com/photo-1604547900898-d1be8b757041?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "魚沼之里": "https://images.unsplash.com/photo-1598155523122-38423bb4d693?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "南魚沼晚餐": "https://images.unsplash.com/photo-1594966723225-b40cb03112b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "坂戶城": "https://images.unsplash.com/photo-1560200353-ce0a76b1d438?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "三条鍛冶道場": "https://images.unsplash.com/photo-1504198266287-9b5d39886958?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "彌彥神社": "https://images.unsplash.com/photo-1528360983277-13d9b152c611?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "Pier Bandai": "https://images.unsplash.com/photo-1534483509549-066311df9785?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "醬汁豬排丼": "https://images.unsplash.com/photo-1606756087545-f0949d883709?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "東橫INN 新潟站前": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "雪地自駕": "https://images.unsplash.com/photo-1491002052546-bf38f186af56?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "Enza Cafe": "https://images.unsplash.com/photo-1552566626-52f8b828add9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "地獄谷野猿公苑": "https://images.unsplash.com/photo-1516805844901-09cdb584a863?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "味噌家": "https://images.unsplash.com/photo-1591814468981-1b9201097241?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "東橫INN 長野站東口": "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "穂高神社": "https://images.unsplash.com/photo-1528360983277-13d9b152c611?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "信州蕎麥麵": "https://images.unsplash.com/photo-1519985176271-adb104622cd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "立石公園": "https://images.unsplash.com/photo-1536098561742-ca998e48cbcc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "甲府餺飥麵": "https://images.unsplash.com/photo-1547592180-8356376ca856?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "Dormy Inn 甲府丸之內": "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "大石公園": "https://images.unsplash.com/photo-1490806843957-31f4c9a91c65?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "吉田烏龍麵": "https://images.unsplash.com/photo-1612927610495-199872e48455?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "箱根神社": "https://images.unsplash.com/photo-1554796323-5d61413d7894?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "小田原關東煮": "https://images.unsplash.com/photo-1534939561360-dd85ce674332?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "鎌倉高校前": "https://images.unsplash.com/photo-1601625470557-013898144df3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "Pacific DRIVE-IN": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "鎌倉大佛": "https://images.unsplash.com/photo-1577002061218-d0554c25f488?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "橫濱中華街": "https://images.unsplash.com/photo-1552554761-464a93557430?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "東橫INN 橫濱體育場前": "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-        };
-
-        function getImage(key, type) {
-            if (imageMap[key]) return imageMap[key];
-            for (const mapKey in imageMap) { if (key.includes(mapKey)) return imageMap[mapKey]; }
-            const fallbacks = { 
-                'food': 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', 
-                'stay': 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', 
-                'sight': 'https://images.unsplash.com/photo-1524413840807-0c3cb6fa808d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', 
-                'car': 'https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', 
-                'shopping': 'https://images.unsplash.com/photo-1534483509549-066311df9785?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80' 
-            };
-            return fallbacks[type] || fallbacks['sight'];
-        }
-
-        const tripData = {
-            days: [
-                {
-                    id: 1, date: "2/8", dayNum: "Day 1",
-                    location: "台北 ✈ 東京", weather: "6°C 多雲",
-                    timeline: [
-                        { time: "12:50", title: "起飛 TPE", desc: "捷星航空 GK14 (T1)", longDesc: "於桃園國際機場第一航廈辦理登機手續。建議您提早2.5至3小時抵達機場，以預留充裕時間進行行李托運與安檢。捷星航空櫃台通常位於T1的出境大廳左側區域。", type: "transport", travelNext: { time: "3h 5m", dist: "2,100km" } },
-                        { time: "16:55", title: "抵達 NRT", desc: "成田機場 (T3)", longDesc: "抵達東京成田機場第三航廈。入境手續完成後，請依照地板上的跑道指示，前往接駁巴士站或步行前往第二航廈轉乘其他交通工具。第一晚建議在機場便利商店購買些許零食。", type: "transport", travelNext: { time: "15m", dist: "接駁車" } },
-                        { time: "18:00", title: "入住：東橫INN 成田機場 本館", desc: "提供免費接駁巴士。", longDesc: "今晚下榻的飯店。最大特色是提供往返成田機場的免費接駁巴士，非常適合晚班機抵達的旅客。飯店一樓設有寬敞的自助洗衣區與大浴場，可以洗去搭機的疲憊。早餐為免費提供的日式飯糰與味噌湯。", type: "stay", link: "東橫INN成田機場本館" }
-                    ]
-                },
-                {
-                    id: 2, date: "2/9", dayNum: "Day 2",
-                    location: "成田 ➜ 水戶", weather: "5°C 晴時多雲",
-                    timeline: [
-                        { time: "08:30", title: "出發：東橫INN 成田機場", desc: "退房出發", type: "start", travelNext: { time: "30m", dist: "機場店" } },
-                        { time: "09:00", title: "取車出發", desc: "Toyota Rent a Car 成田機場店", longDesc: "這是本次自駕之旅的起點。您預約的是 Toyota Sienta 7人座車型，空間靈活適合家庭。取車時請務必與店員確認車身外觀是否有舊傷，並確認是否已安裝 ETC 卡以及針對二月天氣的「雪地輪胎 (Winter Tires)」，這對於後續前往日光和長野山區至關重要。", type: "car", link: "Toyota Rent a Car Narita Airport", travelNext: { time: "1h 30m", dist: "100km" } },
-                        { time: "10:30", title: "袋田瀑布", desc: "日本三大名瀑，欣賞壯觀冰瀑。", longDesc: "與華嚴瀑布、那智瀑布並列為「日本三大名瀑」。瀑布高120米、寬73米，分四段飛瀉而下。二月是觀賞「冰瀑」的最佳季節，嚴寒使瀑布水流凍結成冰，形成如雕塑般壯麗的白色冰壁，景色令人屏息。", type: "sight", link: "袋田瀑布", travelNext: { time: "1h", dist: "55km" } },
-                        { time: "12:45", title: "午餐：鮟鱇魚鍋", desc: "推薦：元祖鮟鱇魚鍋 山翠。", longDesc: "茨城縣冬季不可錯過的極品美味。「山翠」是水戶的老字號名店，這裡的鮟鱇魚鍋以將魚肝溶入味噌湯底的「多布汁（Dobujiru）」風味聞名，湯頭濃郁鮮甜，富含膠原蛋白，能溫暖身心。", type: "food", link: "山翠 水戶", travelNext: { time: "10m", dist: "市區" } },
-                        { time: "14:30", title: "偕樂園", desc: "日本三大名園，水戶梅花祭。", longDesc: "日本三大名園之一，由水戶藩主德川齊昭所建。二月上旬正值著名的「水戶梅花祭」初期，園內種植了約3000株、100個品種的梅花。推薦登上園內的「好文亭」，從三樓樂壽樓可以俯瞰千波湖與梅林的絕美景色。", type: "sight", link: "偕樂園", travelNext: { time: "15m", dist: "市區" } },
-                        { time: "18:30", title: "晚餐：常陸牛", desc: "推薦：飯島餐廳 或 和牛庵。", longDesc: "常陸牛是茨城縣產的高級黑毛和牛，以肉質細膩、脂肪甘甜著稱。「飯島餐廳」由肉舖直營，能以實惠價格品嚐頂級牛排；「和牛庵」則提供氣氛優雅的日式庭園用餐環境，推薦嘗試他們的牛排御膳。", type: "food", link: "Restaurant Iijima Mito", travelNext: { time: "10m", dist: "回飯店" } },
-                        { time: "20:00", title: "入住：Dormy Inn 水戶", desc: "享受天然溫泉與夜鳴拉麵。", longDesc: "Dormy Inn 系列飯店以高品質服務聞名。這裡最大的亮點是頂樓的天然溫泉「香梅之湯」，泡湯後還能享用免費的宵夜「夜鳴拉麵（醬油拉麵）」。", type: "stay", link: "Dormy Inn Mito" }
-                    ]
-                },
-                {
-                    id: 3, date: "2/10", dayNum: "Day 3",
-                    location: "水戶 ➜ 日光", weather: "0°C 山區降雪",
-                    timeline: [
-                        { time: "08:30", title: "出發：Dormy Inn 水戶", desc: "退房出發", type: "start", travelNext: { time: "50m", dist: "35km" } },
-                        { time: "09:20", title: "常陸國出雲大社", desc: "祈求結緣，巨大注連繩。", longDesc: "這是島根縣出雲大社的分社，以祈求良緣靈驗而聞名。最引人注目的是拜殿上懸掛的超巨大注連繩，重達6噸，氣勢非凡。參拜方式遵循古法「二禮、四拍手、一禮」。", type: "sight", link: "常陸國出雲大社", travelNext: { time: "1h 30m", dist: "90km" } },
-                        { time: "13:30", title: "日光東照宮", desc: "世界遺產，必看三猿、眠貓。", longDesc: "供奉江戶幕府初代將軍德川家康的神社，建築風格金碧輝煌，雕刻極盡奢華。必看亮點包括神廄舍上的「非禮勿視、非禮勿聽、非禮勿言」三猿雕刻，以及通往奧社入口上方的國寶「眠貓」。", type: "sight", link: "日光東照宮", travelNext: { time: "40m", dist: "18km" } },
-                        { time: "15:40", title: "華嚴瀑布", desc: "經伊呂波坂上山，欣賞冰瀑。", longDesc: "中禪寺湖水從97公尺高的岩壁傾瀉而下，是日光最具代表性的瀑布。一定要搭乘電梯下到觀瀑台，近距離感受水花飛濺的魄力。前往途中的「伊呂波坂」有48個急彎，冬季路面可能結冰，請務必小心駕駛。", type: "sight", link: "華嚴瀑布", travelNext: { time: "1h", dist: "50km" } },
-                        { time: "18:30", title: "晚餐：宇都宮餃子", desc: "推薦：來らっせ (Kirasse)。", longDesc: "宇都宮被稱為日本的餃子之都。如果您有選擇困難症，推薦直接去「來らっせ (Kirasse) 本店」。這裡集合了當地五家最有名的人氣店（如Minmin、Menmen），讓您可以一次點齊不同口味的餃子進行評比。", type: "food", link: "Kirasse Main Store", travelNext: { time: "10m", dist: "市區" } },
-                        { time: "20:00", title: "入住：東橫INN 宇都宮站前", desc: "車站旁便利住宿。", longDesc: "位於JR宇都宮站西口步行可達的距離，周邊生活機能完善。飯店提供立體機械式停車場，若車位已滿，櫃檯人員會親切指引至附近的合作平面停車場。", type: "stay", link: "Toyoko Inn Utsunomiya" }
-                    ]
-                },
-                {
-                    id: 4, date: "2/11", dayNum: "Day 4",
-                    location: "宇都宮 ➜ 南魚沼", weather: "-2°C 大雪",
-                    timeline: [
-                        { time: "09:00", title: "出發：東橫INN 宇都宮", desc: "前往群馬", type: "start", travelNext: { time: "1h 30m", dist: "90km" } },
-                        { time: "10:30", title: "少林山達摩寺", desc: "達摩發源地，購買許願達摩。", longDesc: "群馬縣高崎市是日本「緣起達摩」的發源地。這座寺廟依山而建，本堂堆滿了信徒還願的大小達摩，景象壯觀且獨特。您可以在此購買眉毛代表鶴與龜的達摩，畫上左眼許下心願。", type: "sight", link: "少林山達摩寺", travelNext: { time: "20m", dist: "8km" } },
-                        { time: "11:30", title: "午餐：登利平 鳥飯", desc: "群馬縣民的靈魂美食。", longDesc: "提到群馬美食，絕對不能錯過「登利平」。他們的「鳥飯便當（竹）」是縣民從小吃到大的靈魂食物。薄切雞胸肉淋上秘傳的甜鹹醬汁，鋪滿在熱騰騰的白飯上，簡單卻令人回味無窮。", type: "food", link: "登利平 本店", travelNext: { time: "1h 40m", dist: "110km" } },
-                        { time: "14:30", title: "魚沼之里", desc: "參觀雪室與品酒。", longDesc: "由知名的清酒品牌「八海山」所經營的複合設施。最大亮點是利用冬季積雪來冷藏清酒的巨大「雪室」。園區內還有精美的麵包店、咖啡廳與伴手禮店，建築風格現代且融入雪國自然景觀。", type: "sight", link: "魚沼之里", travelNext: { time: "20m", dist: "10km" } },
-                        { time: "18:00", title: "南魚沼晚餐", desc: "推薦：欅亭(洋食) 或 魚沼釜蔵。", longDesc: "既然來到南魚沼，一定要品嚐這裡產的「越光米」，被譽為日本第一。推薦「欅亭」，雖然是洋食屋，但他們的蛋包飯配上頂級越光米，口感絕佳；或是「魚沼釜蔵」品嚐釜飯與在地鄉土料理。", type: "food", link: "Keyakitei Minamiuonuma", travelNext: { time: "15m", dist: "溫泉街" } },
-                        { time: "19:30", title: "入住：坂戶城 (六日町溫泉)", desc: "雪國溫泉與榻榻米房。", longDesc: "充滿歷史風情的溫泉旅館，與戰國武將直江兼續有關。您可以在露天溫泉中一邊賞雪一邊泡湯，體驗雪國特有的浪漫。建議預約飯店的早晚餐，品嚐使用大量在地食材製作的會席料理。", type: "stay", link: "Sakadojo Minamiuonuma" }
-                    ]
-                },
-                {
-                    id: 5, date: "2/12", dayNum: "Day 5",
-                    location: "南魚沼 ➜ 新潟", weather: "3°C 雨夾雪",
-                    timeline: [
-                        { time: "08:15", title: "出發：坂戶城", desc: "雪地駕駛請小心", type: "start", travelNext: { time: "1h 30m", dist: "80km" } },
-                        { time: "09:45", title: "三条鍛冶道場", desc: "職人指導製作拆信刀體驗。", longDesc: "新潟燕三條地區以世界級的金屬工藝聞名。在這裡，您可以穿上圍裙，在職人的手把手指導下，親自體驗將一根五寸釘燒紅、敲打、研磨，最後變成一把專屬於您的拆信刀，非常有紀念價值。", type: "activity", link: "Sanjo Blacksmith Dojo", travelNext: { time: "30m", dist: "20km" } },
-                        { time: "13:00", title: "彌彥神社", desc: "新潟最強能量景點。", longDesc: "越後國一之宮，自古以來就是著名的能量景點（Power Spot）。神社座落在彌彥山腳下，四周被古老的森林環繞，氣氛莊嚴肅穆。參拜後若天氣許可，可搭乘纜車登上彌彥山頂，眺望日本海。", type: "sight", link: "彌彥神社", travelNext: { time: "50m", dist: "40km" } },
-                        { time: "15:30", title: "Pier Bandai", desc: "萬代市場，海鮮伴手禮採買。", longDesc: "新潟市區最熱鬧的觀光市場。這裡有著名的「迴轉壽司 弁慶」，能以實惠價格吃到佐渡島直送的新鮮海產。此外，也能在此買到新潟特產的越光米、清酒以及各式海鮮乾貨。", type: "shopping", link: "Pier Bandai", travelNext: { time: "15m", dist: "市區" } },
-                        { time: "18:00", title: "晚餐：醬汁豬排丼", desc: "推薦：炸豬排太郎。", longDesc: "這不是一般的豬排飯！新潟市的「醬汁豬排丼（Tare-katsu）」特色是不加蛋液封住，而是將剛炸好的薄切豬排，快速浸泡在特製的甜鹹醬油醬汁中，然後鋪在白飯上，酥脆又入味。", type: "food", link: "Tonkatsu Taro Niigata", travelNext: { time: "10m", dist: "車站前" } },
-                        { time: "20:00", title: "入住：東橫INN 新潟站前", desc: "新潟車站步行可達。", longDesc: "位於繁華的新潟站萬代口側，周邊餐廳與居酒屋林立，非常方便。飯店設施標準且乾淨，是探索新潟市區夜生活的絕佳據點。", type: "stay", link: "Toyoko Inn Niigata Ekimae" }
-                    ]
-                },
-                {
-                    id: 6, date: "2/13", dayNum: "Day 6",
-                    location: "新潟 ➜ 長野", weather: "1°C 多雲時雪",
-                    timeline: [
-                        { time: "09:00", title: "出發：東橫INN 新潟站前", desc: "長途移動至地獄谷", type: "start", travelNext: { time: "2h 30m", dist: "160km" } },
-                        { time: "11:30", title: "午餐：Enza Cafe", desc: "步道入口旁，推薦雞白湯拉麵。", longDesc: "位於地獄谷野猿公苑步道入口處的時髦咖啡廳。在寒冷的天氣爬山前後，來一碗熱騰騰、湯頭濃郁的雞白湯拉麵，或是酥脆的炸雞，絕對是暖身首選。", type: "food", link: "Enza Cafe Jigokudani", travelNext: { time: "30m", dist: "步行" } },
-                        { time: "13:20", title: "地獄谷野猿公苑", desc: "世界唯一雪猴泡溫泉。", longDesc: "這是一個能看到野生日本獼猴（雪猴）在雪地中享受天然溫泉的奇蹟之地。從停車場需步行約30分鐘的山路才能抵達，看著猴子們滿臉通紅、表情陶醉的模樣，非常療癒。", type: "sight", link: "Jigokudani Monkey Park", travelNext: { time: "50m", dist: "35km" } },
-                        { time: "18:00", title: "晚餐：味噌家", desc: "長野站旁，濃郁味噌拉麵。", longDesc: "長野縣是全日本味噌產量第一的地方。這家「味噌家」拉麵就在長野車站旁，使用信州味噌製作湯頭，濃郁卻不死鹹，搭配大火快炒的豆芽菜與Q彈粗麵，香氣十足。", type: "food", link: "Misoya Nagano Station", travelNext: { time: "5m", dist: "步行" } },
-                        { time: "19:30", title: "入住：東橫INN 長野站東口", desc: "長野站東口直達。", longDesc: "位於較為安靜的長野站東口，對於自駕旅客來說進出較為方便。飯店旁邊就有便利商店，距離車站內的商場也僅需步行幾分鐘。", type: "stay", link: "Toyoko Inn Nagano Station" }
-                    ]
-                },
-                {
-                    id: 7, date: "2/14", dayNum: "Day 7",
-                    location: "長野 ➜ 甲府", weather: "4°C 晴朗",
-                    timeline: [
-                        { time: "09:00", title: "出發：東橫INN 長野", desc: "前往安曇野", type: "start", travelNext: { time: "1h 15m", dist: "60km" } },
-                        { time: "10:15", title: "穂高神社", desc: "交通安全守護神。", longDesc: "這裡是日本北阿爾卑斯山的總鎮守，更是著名的「交通安全」守護神。身為自駕旅行者，一定要來此參拜，祈求接下來的旅程行車平安順利。", type: "sight", link: "Hotaka Shrine", travelNext: { time: "45m", dist: "40km" } },
-                        { time: "11:30", title: "午餐：信州蕎麥麵", desc: "推薦：Soba-dokoro Kamijo。", longDesc: "安曇野以清澈的水質聞名，製作出的蕎麥麵特別香氣撲鼻。這裡推薦點「天惠蕎麥麵」，裡面加入了大量當地產的蔬菜、山菜以及一顆溫泉蛋，口感豐富有層次。", type: "food", link: "Soba-dokoro Kamijo", travelNext: { time: "1h", dist: "60km" } },
-                        { time: "14:00", title: "立石公園", desc: "《你的名字》系守湖原型。", longDesc: "位於諏訪湖東側的高地公園。這裡可以俯瞰整個諏訪湖的壯麗全景。據說這裡是電影《你的名字》中「系守湖」以及黃昏分身之時場景的重要靈感來源，是粉絲必朝聖之地。", type: "sight", link: "Tateishi Park Suwa", travelNext: { time: "1h", dist: "60km" } },
-                        { time: "18:30", title: "晚餐：甲府餺飥麵", desc: "推薦：小作。", longDesc: "山梨縣最具代表性的鄉土料理。「餺飥（Hoto）」是一種用小麥粉製成的寬扁麵條，與南瓜、馬鈴薯、紅蘿蔔等蔬菜在味噌湯底中燉煮。湯頭濃稠甘甜，非常有飽足感且暖胃。", type: "food", link: "Kosaku Kofu Station", travelNext: { time: "10m", dist: "市區" } },
-                        { time: "20:00", title: "入住：Dormy Inn 甲府丸之內", desc: "頂樓溫泉勝運之湯。", longDesc: "這間 Dormy Inn 擁有極佳的景觀。頂樓的天然溫泉「勝運之湯」可以一邊泡湯，一邊眺望甲府市的夜景，天氣好且白天時甚至能看見富士山。這裡同樣提供免費的夜鳴拉麵。", type: "stay", link: "Dormy Inn Kofu Marunouchi" }
-                    ]
-                },
-                {
-                    id: 8, date: "2/15", dayNum: "Day 8",
-                    location: "甲府 ➜ 箱根", weather: "5°C 多雲",
-                    timeline: [
-                        { time: "09:00", title: "出發：Dormy Inn 甲府", desc: "前往河口湖", type: "start", travelNext: { time: "1h", dist: "40km" } },
-                        { time: "10:00", title: "大石公園", desc: "河口湖畔，富士山絕佳拍攝點。", longDesc: "位於河口湖北岸的公園，是拍攝富士山與湖水同框的經典機位。二月的空氣乾燥清澈，能看見完整富士山頭的機率非常高。公園內還有漂亮的步道與伴手禮店。", type: "sight", link: "Oishi Park", travelNext: { time: "20m", dist: "10km" } },
-                        { time: "11:30", title: "午餐：吉田烏龍麵", desc: "推薦：蔵ノ介。", longDesc: "這是富士吉田市的特色麵食，以「日本最硬」著稱。手打的麵條極粗且咬勁十足，通常會搭配馬肉與水煮高麗菜，湯頭則是醬油與味噌的混合風味，非常獨特。", type: "food", link: "Kuranosuke Yoshida Udon", travelNext: { time: "1h 30m", dist: "50km" } },
-                        { time: "14:00", title: "箱根神社", desc: "水中鳥居，平和的鳥居。", longDesc: "箱根著名的能量景點。最知名的就是矗立在蘆之湖水面上的紅色「平和的鳥居」，是遊客必拍的打卡點。沿著杉木林參道向上走，可以抵達莊嚴的神社本殿，祈求開運除厄。", type: "sight", link: "Hakone Shrine", travelNext: { time: "40m", dist: "20km" } },
-                        { time: "18:00", title: "晚餐：小田原關東煮", desc: "推薦：小田原關東煮本店。", longDesc: "小田原是魚板的故鄉。這裡的關東煮不同於便利商店，使用的是當地老舖製作的高級魚漿製品，湯頭清淡優雅，能吃出食材原味。本店由古民家茶屋改建，氣氛極佳，務必預約。", type: "food", link: "Odawara Oden Honten", travelNext: { time: "15m", dist: "市區" } },
-                        { time: "20:00", title: "入住：小田原住宿", desc: "小田原車站周邊。", longDesc: "小田原是箱根與東京之間的重要交通樞紐。住宿於車站周邊，方便隔天前往鎌倉或返回東京。車站附近有許多藥妝店與餐廳。", type: "stay", link: "Odawara Station" }
-                    ]
-                },
-                {
-                    id: 9, date: "2/16", dayNum: "Day 9",
-                    location: "小田原 ➜ 橫濱", weather: "9°C 晴朗",
-                    timeline: [
-                        { time: "09:30", title: "出發：小田原", desc: "前往湘南海岸", type: "start", travelNext: { time: "1h", dist: "30km" } },
-                        { time: "10:30", title: "鎌倉高校前", desc: "灌籃高手平交道。", longDesc: "江之島電鐵的一個小站，因動畫《灌籃高手》片頭曲中，櫻木花道與晴子揮手的場景而爆紅。平交道背景就是蔚藍的大海，非常夢幻。不過此處車流量大，拍照時請務必注意安全。", type: "sight", link: "Kamakurakokomae Station", travelNext: { time: "10m", dist: "2km" } },
-                        { time: "11:00", title: "午餐：Pacific DRIVE-IN", desc: "七里濱海景夏威夷料理。", longDesc: "位於七里濱海岸停車場旁的超人氣網紅餐廳。主打夏威夷蒜味蝦飯與鬆餅。如果天氣好，坐在戶外露台區，可以直接欣賞到江之島與富士山的絕美海景。", type: "food", link: "Pacific DRIVE-IN", travelNext: { time: "20m", dist: "5km" } },
-                        { time: "13:00", title: "鎌倉大佛", desc: "高德院國寶大佛。", longDesc: "這尊高達11.3米的露天青銅阿彌陀如來坐像，是鎌倉的象徵。大佛神態慈祥，經歷了數百年的風雨依然屹立不搖。您可以購票進入大佛的中空內部，參觀其鑄造構造。", type: "sight", link: "Kamakura Daibutsu", travelNext: { time: "45m", dist: "25km" } },
-                        { time: "18:00", title: "晚餐：橫濱中華街", desc: "日本最大唐人街。", longDesc: "日本三大中華街之首，充滿了異國情調。推薦「橫濱大飯店」的高級點單式吃到飽，可以品嚐北京烤鴨與小籠包；若是嗜辣者，則推薦「景德鎮」的正宗四川麻婆豆腐。", type: "food", link: "Yokohama Chinatown", travelNext: { time: "10m", dist: "市區" } },
-                        { time: "20:00", title: "入住：東橫INN 橫濱體育場前", desc: "就在中華街旁。", longDesc: "地理位置極佳，飯店對面就是橫濱體育場，旁邊就是中華街的入口。距離著名的橫濱港未來區、紅磚倉庫等景點也不遠。", type: "stay", link: "Toyoko Inn Yokohama Stadium" }
-                    ]
-                },
-                {
-                    id: 10, date: "2/17", dayNum: "Day 10",
-                    location: "橫濱 ➜ 成田 ✈", weather: "8°C 多雲",
-                    timeline: [
-                        { time: "09:00", title: "出發：東橫INN 橫濱", desc: "Check-out 前往機場", type: "start", travelNext: { time: "1h 30m", dist: "100km" } },
-                        { time: "13:00", title: "還車", desc: "Toyota Rent a Car 成田機場店", longDesc: "請記得在還車前，於機場附近的加油站將油箱加滿，並保留加油收據以供查驗。檢查車內（包含後車廂、置物櫃）是否遺留個人物品。ETC卡也別忘了拔除。", type: "car", link: "Toyota Rent a Car Narita Airport", travelNext: { time: "10m", dist: "接駁" } },
-                        { time: "14:00", title: "報到", desc: "成田機場 Check-in", longDesc: "辦理登機手續與行李託運。入關前，您可以在機場商店做最後的伴手禮採買，如東京香蕉、Royce巧克力等。", type: "plane", travelNext: { time: "2h", dist: "回憶" } },
-                        { time: "16:00", title: "起飛", desc: "返回台北", longDesc: "搭乘星宇航空返回溫暖的家。帶著滿滿的照片與回憶，結束這趟精彩的關東自駕之旅。", type: "plane" },
-                        { time: "19:00", title: "抵達：溫暖的家", desc: "Home Sweet Home", longDesc: "平安抵達。整理行李，休息片刻，期待下一次的旅行。", type: "stay" }
-                    ]
-                }
-            ],
-            info: {
-                flights: ["GK14 TPE 12:50 ➝ NRT 16:55 (2/8)", "JX801 NRT 13:40 ➝ TPE 16:45 (2/17)"],
-                hotels: [
-                    "東橫INN 成田機場本館 (0476-33-0451)", 
-                    "Dormy Inn 水戶 (029-232-5489)", 
-                    "東橫INN 宇都宮站前 (028-634-1045)", 
-                    "坂戶城 (025-773-3333)", 
-                    "東橫INN 新潟站前 (025-241-1045)", 
-                    "東橫INN 長野站東口 (026-228-1045)", 
-                    "Dormy Inn 甲府丸之內 (055-223-5489)", 
-                    "東橫INN 橫濱體育場前 (045-662-1045)"
-                ],
-                emergency: [{n:"日本報警",v:"110"},{n:"日本救護",v:"119"},{n:"外交部",v:"080-1009-7179"}]
-            },
-            budget: [
-                { i: "租車 (Toyota Sienta)", c: "¥108,900" },
-                { i: "住宿 Day1 (東橫INN)", c: "¥11,495" },
-                { i: "免責補償制度", c: "¥9,900" },
-                { i: "ETC 過路費 (預估)", c: "¥15,000" },
-                { i: "油資 (預估)", c: "¥8,000" }
-            ]
-        };
-
-        let currentDayId = 1;
-
-        const daySelector = document.getElementById('day-selector');
-        const dayHeader = document.getElementById('day-header');
-        const timelineContainer = document.getElementById('timeline-container');
-        const detailModal = document.getElementById('detail-modal');
-        const itineraryView = document.getElementById('itinerary-view');
-        const infoView = document.getElementById('info-view');
-        const budgetView = document.getElementById('budget-view');
-
-        function init() {
-            renderDaySelector();
-            renderDay(1);
-            lucide.createIcons();
-        }
-
-        function renderDaySelector() {
-            daySelector.innerHTML = tripData.days.map(day => `
-                <button onclick="selectDay(${day.id})" 
-                    class="day-btn flex-shrink-0 flex flex-col items-center justify-center min-w-[5.5rem] py-3.5 rounded-2xl border-2 transition-all duration-300 ${day.id === currentDayId ? 'bg-zinc-800 text-rose-400 border-rose-600/60 shadow-lg shadow-rose-900/10 scale-105' : 'bg-zinc-800/40 text-zinc-500 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600'}" 
-                    data-id="${day.id}">
-                    <span class="text-[11px] font-bold tracking-widest uppercase mb-1">${day.dayNum}</span>
-                    <span class="text-[15px] font-bold font-mono tracking-tight">${day.date}</span>
-                </button>
-            `).join('');
-        }
-
-        function selectDay(id) {
-            currentDayId = id;
-            document.querySelectorAll('.day-btn').forEach(btn => {
-                const isActive = parseInt(btn.dataset.id) === id;
-                btn.className = `day-btn flex-shrink-0 flex flex-col items-center justify-center min-w-[5.5rem] py-3.5 rounded-2xl border-2 transition-all duration-300 ${
-                    isActive 
-                    ? 'bg-zinc-800 text-rose-400 border-rose-600/60 shadow-lg shadow-rose-900/10 scale-105' 
-                    : 'bg-zinc-800/40 text-zinc-500 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 active:scale-95'
-                }`;
-            });
-            itineraryView.classList.remove('opacity-100');
-            itineraryView.classList.add('opacity-0');
-            setTimeout(() => {
-                renderDay(id);
-                itineraryView.classList.remove('opacity-0');
-                itineraryView.classList.add('opacity-100');
-            }, 150);
-        }
-
-        function renderDay(id) {
-            const day = tripData.days.find(d => d.id === id);
-            
-            dayHeader.innerHTML = `
-                <div class="flex items-end justify-between mb-6 animate-slide-up">
-                    <h2 class="text-3xl font-bold text-white tracking-tight">${day.location}</h2>
-                    <div class="flex items-center space-x-2 bg-zinc-800 px-4 py-2 rounded-xl border border-zinc-700 shadow-sm">
-                        <i data-lucide="cloud" class="w-5 h-5 text-zinc-400"></i>
-                        <span class="text-base font-bold text-zinc-200 font-mono">${day.weather}</span>
-                    </div>
-                </div>
-            `;
-
-            timelineContainer.innerHTML = day.timeline.map((item, index) => {
-                let borderClass = "border-zinc-600";
-                let isStart = item.type === 'start';
-                
-                // 移除圖示，改用左邊框顏色
-                if(item.type === 'food') borderClass = "border-orange-500";
-                if(item.type === 'sight') borderClass = "border-emerald-500";
-                if(item.type === 'car' || item.type === 'transport') borderClass = "border-blue-500";
-                if(item.type === 'stay') borderClass = "border-purple-500";
-                if(item.type === 'shopping') borderClass = "border-pink-500";
-                if(isStart) borderClass = "border-zinc-500";
-
-                let travelHtml = '';
-                if (item.travelNext) {
-                    travelHtml = `
-                        <div class="absolute left-[2.5rem] top-12 bottom-0 w-[2px] travel-line z-0 opacity-40"></div>
-                        <div class="pl-[4.5rem] py-4">
-                            <div class="inline-flex items-center gap-2 px-2 py-1 rounded bg-zinc-800/50 border border-zinc-700/50 text-[10px] text-zinc-500 font-mono">
-                                <i data-lucide="chevrons-down" class="w-3 h-3"></i>
-                                <span>${item.travelNext.time}</span>
-                                ${item.travelNext.dist ? `<span class="w-px h-2 bg-zinc-600"></span><span>${item.travelNext.dist}</span>` : ''}
-                            </div>
-                        </div>
-                    `;
-                }
-
-                return `
-                    <div class="relative group animate-slide-up" style="animation-delay: ${index * 60}ms">
-                        <div class="flex items-stretch cursor-pointer transition-all active:scale-[0.99]" onclick='openModal(${JSON.stringify(item)})'>
-                            
-                            <!-- 時間 (左側) -->
-                            <div class="flex flex-col items-end w-12 pt-1 mr-4 flex-shrink-0">
-                                <span class="text-xs font-mono font-bold text-zinc-500 tracking-tight">${item.time}</span>
-                            </div>
-
-                            <!-- 卡片本體 (左邊框顏色) -->
-                            <div class="flex-1 bg-zinc-800 border-l-4 ${borderClass} rounded-r-xl border-y border-r border-zinc-700/50 p-4 hover:bg-zinc-700/50 transition-colors shadow-sm relative z-10">
-                                <div class="flex justify-between items-start mb-1.5">
-                                    <h3 class="text-[16px] ${isStart ? 'font-medium text-zinc-400' : 'font-bold text-zinc-100'} leading-tight tracking-tight">${item.title}</h3>
-                                </div>
-                                <p class="text-[13px] text-zinc-400 line-clamp-2 leading-relaxed font-normal">${item.desc}</p>
-                            </div>
-                        </div>
-                        ${travelHtml}
-                    </div>
-                `;
-            }).join('');
-
-            lucide.createIcons();
-        }
-
-        function switchTab(tabName) {
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                const icon = btn.querySelector('i');
-                const text = btn.querySelector('span');
-                const container = btn.querySelector('div');
-                
-                if(btn.dataset.tab === tabName) {
-                    icon.classList.remove('text-zinc-400'); icon.classList.add('text-rose-500');
-                    text.classList.remove('text-zinc-400'); text.classList.add('text-rose-500');
-                    container.classList.add('bg-zinc-800');
-                } else {
-                    icon.classList.add('text-zinc-400'); icon.classList.remove('text-rose-500');
-                    text.classList.add('text-zinc-400'); text.classList.remove('text-rose-500');
-                    container.classList.remove('bg-zinc-800');
-                }
-            });
-            itineraryView.classList.add('hidden');
-            infoView.classList.add('hidden');
-            budgetView.classList.add('hidden');
-            if(tabName === 'info') { renderInfo(); infoView.classList.remove('hidden'); }
-            else if (tabName === 'budget') { renderBudget(); budgetView.classList.remove('hidden'); }
-            else { itineraryView.classList.remove('hidden'); }
-        }
-
-        function renderInfo() {
-            if(infoView.innerHTML.trim() !== "") return; 
-            infoView.innerHTML = `
-                <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 shadow-lg">
-                    <h3 class="text-sm font-bold text-white mb-4 flex items-center tracking-wide"><i data-lucide="plane" class="w-4 h-4 mr-2 text-zinc-400"></i> 航班資訊</h3>
-                    ${tripData.info.flights.map(f => `<div class="text-[13px] text-zinc-300 py-3 border-b border-zinc-700/50 last:border-0 font-mono flex items-center"><div class="w-2 h-2 bg-rose-500 rounded-full mr-3"></div>${f}</div>`).join('')}
-                </div>
-                <div class="bg-zinc-800 p-6 rounded-3xl border border-zinc-700 shadow-lg">
-                    <h3 class="text-sm font-bold text-white mb-4 flex items-center tracking-wide"><i data-lucide="bed-double" class="w-4 h-4 mr-2 text-purple-400"></i> 住宿列表</h3>
-                    ${tripData.info.hotels.map(h => `<div class="text-[13px] text-zinc-300 py-3 border-b border-zinc-700/50 last:border-0 flex items-center"><div class="w-1.5 h-1.5 bg-purple-500 rounded-full mr-3"></div>${h}</div>`).join('')}
-                </div>
-                <div class="grid grid-cols-3 gap-3">
-                    ${tripData.info.emergency.map(e => `
-                        <div class="bg-rose-950/20 border border-rose-900/30 p-4 rounded-2xl text-center">
-                            <div class="text-[10px] text-rose-300 mb-1 tracking-wider uppercase opacity-80">${e.n}</div>
-                            <div class="text-lg font-bold text-rose-500 font-mono tracking-tight">${e.v}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            lucide.createIcons();
-        }
-
-        function renderBudget() {
-            if(budgetView.innerHTML.trim() !== "") return;
-            budgetView.innerHTML = `
-                <div class="bg-zinc-800 rounded-3xl border border-zinc-700 overflow-hidden shadow-lg">
-                    <div class="p-6 bg-zinc-800 border-b border-zinc-700">
-                        <h3 class="font-bold text-white flex items-center text-lg"><i data-lucide="wallet" class="w-5 h-5 mr-2.5 text-emerald-400"></i> 預算概覽</h3>
-                    </div>
-                    <div class="divide-y divide-zinc-700">
-                        ${tripData.budget.map(b => `
-                            <div class="p-5 flex justify-between items-center hover:bg-zinc-700/30 transition-colors">
-                                <span class="text-[13px] text-zinc-300 font-medium tracking-wide">${b.i}</span>
-                                <span class="font-mono font-bold text-white text-[15px] bg-zinc-900 px-3 py-1 rounded-lg border border-zinc-700">${b.c}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-            lucide.createIcons();
-        }
-
-        function openModal(item) {
-            document.getElementById('modal-title').innerText = item.title;
-            document.getElementById('modal-desc').innerText = item.longDesc || item.desc;
-            document.getElementById('modal-time').innerText = item.time;
-            
-            const imgUrl = getImage(item.title, item.type);
-            const imgEl = document.getElementById('modal-image');
-            imgEl.style.opacity = '0';
-            imgEl.src = imgUrl;
-            imgEl.onload = () => imgEl.style.opacity = '1';
-
-            const navBtn = document.getElementById('modal-nav-btn');
-            if(item.link) {
-                navBtn.href = `https://www.google.com/maps/search/?api=1&query=${item.link}`;
-                navBtn.classList.remove('hidden'); navBtn.classList.add('flex');
-            } else {
-                navBtn.classList.add('hidden'); navBtn.classList.remove('flex');
+        // --- Weather API Helper ---
+        const fetchWeather = async (lat, lon) => {
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=Asia%2FTokyo`);
+                const data = await res.json();
+                return data.current_weather;
+            } catch (e) {
+                console.error("Weather fetch failed", e);
+                return null;
             }
+        };
 
-            detailModal.classList.remove('hidden'); detailModal.classList.add('flex');
-        }
+        const weatherCodes = {
+            0: { label: '晴朗', icon: 'fa-sun', color: 'text-orange-400' },
+            1: { label: '多雲', icon: 'fa-cloud-sun', color: 'text-yellow-200' },
+            2: { label: '陰天', icon: 'fa-cloud', color: 'text-gray-400' },
+            3: { label: '陰天', icon: 'fa-cloud', color: 'text-gray-400' },
+            45: { label: '霧', icon: 'fa-smog', color: 'text-gray-300' },
+            48: { label: '霧淞', icon: 'fa-snowflake', color: 'text-white' },
+            51: { label: '細雨', icon: 'fa-cloud-rain', color: 'text-blue-300' },
+            61: { label: '下雨', icon: 'fa-umbrella', color: 'text-blue-400' },
+            71: { label: '下雪', icon: 'fa-snowflake', color: 'text-white' },
+            80: { label: '陣雨', icon: 'fa-cloud-showers-heavy', color: 'text-blue-500' },
+            95: { label: '雷雨', icon: 'fa-bolt', color: 'text-yellow-400' },
+        };
 
-        function closeModal() {
-            detailModal.classList.add('hidden'); detailModal.classList.remove('flex');
-        }
+        // --- Data ---
+        // RICH DESCRIPTIONS ADDED
+        const initialItinerary = [
+            {
+                id: 'day1', dayLabel: 'Day 1', date: '2/8 (日)', title: '啟程東京', location: '台北 -> 成田', 
+                coords: { lat: 35.7719, lon: 140.3929 }, // Narita
+                events: [
+                    { id: 'd1-1', type: 'transport', time: '12:50', title: '捷星航空 GK14', desc: '台北(TPE) T1 -> 東京(NRT) T3。', nav: 'Narita International Airport Terminal 3', highlight: '行李：手提7kg / 託運30kg+20kg', travelInfo: '機場接駁 | 30分' },
+                    { 
+                        id: 'd1-2', type: 'stay', time: '18:00', title: '東橫INN 成田機場 本館', 
+                        desc: '作為日本最大規模的東橫INN，本館擁有數千間客房，是許多紅眼班機或自駕旅客的首選中繼站。對於租車旅客而言，這裡擁有超大型的平面與立體停車場，停車極為便利。飯店提供免費的接駁巴士往返成田機場各航廈，班次密集。雖然房間維持東橫INN一貫的標準配置，簡單乾淨，但大廳設有寬敞的自動報到機與 Lawson 便利商店，非常方便。早餐提供簡單的日式飯糰與味噌湯，讓您在出發取車前能先墊墊胃。', 
+                        nav: 'Toyoko Inn Narita Airport Honkan', highlight: '已預訂 (早餐/停車付費)', subInfo: '¥11,495 (現場付)' 
+                    }
+                ]
+            },
+            {
+                id: 'day2', dayLabel: 'Day 2', date: '2/9 (一)', title: '茨城名瀑與鮟鱇魚', location: '成田 -> 水戶',
+                coords: { lat: 36.3659, lon: 140.4712 }, // Mito
+                events: [
+                    { id: 'd2-0', type: 'stay', time: '08:30', title: '出發：東橫INN 成田機場', desc: '辦理退房，前往租車。', nav: 'Toyoko Inn Narita Airport Honkan', highlight: '記得帶走所有行李', travelInfo: '接駁車 | 15分' },
+                    { id: 'd2-1', type: 'transport', time: '09:00', title: '租車取車', desc: 'Toyota Rent a Car 成田機場店。Sienta HEV。', nav: 'Toyota Rent a Car Narita Airport', highlight: '預約番號：99758887600', subInfo: '費用：¥108,900', travelInfo: '85km | 2小時' },
+                    { 
+                        id: 'd2-2', type: 'sight', time: '10:30', title: '袋田瀑布', 
+                        desc: '名列「日本三大名瀑」之一，高 120 公尺、寬 73 公尺，水流分四段落下，因此又被稱為「四度之瀧」。冬季（1月至2月）是這裡最神祕的季節，極寒時瀑布會結凍形成壯觀的「冰瀑」奇景，潔白的冰壁掛在岩壁上，展現出大自然靜謐而震撼的力量。您可以穿越隧道，搭乘電梯前往高處的觀景台，近距離欣賞這凍結的時間美學。周邊還有著名的「鮎魚鹽燒」與糰子，是賞景後必吃的美味點心。', 
+                        nav: 'Fukuroda Falls', highlight: '建議停留1小時', travelInfo: '45km | 1小時' 
+                    },
+                    { 
+                        id: 'd2-3', type: 'food', time: '12:45', title: '午餐：鮟鱇魚鍋', 
+                        desc: '茨城縣冬季最具代表性的極品美食，有「東之鮟鱇，西之河豚」的美譽。鮟鱇魚雖然外表其貌不揚，但全身除了骨頭以外皆可食用。冬季是鮟鱇魚肝（Ankimo）最肥美的季節，被稱為「海中的鵝肝」。道地的鮟鱇魚鍋通常以味噌為基底，將魚肝融入湯頭中，煮出濃郁橘黃色的精華高湯，口感醇厚鮮美，搭配富有膠原蛋白的魚皮與鮮嫩魚肉，在寒冷的冬天吃上一鍋，全身都會暖和起來。', 
+                        nav: 'Sansui Mito', highlight: '必吃：鮟鱇魚肝味噌湯底', travelInfo: '市區 | 15分' 
+                    },
+                    { 
+                        id: 'd2-4', type: 'sight', time: '14:30', title: '偕樂園 賞梅', 
+                        desc: '與金澤兼六園、岡山後樂園並列為「日本三大名園」。這裡最著名的就是梅花，園內種植了約 100 品種、3000 棵梅樹。您造訪的 2 月中旬至下旬，正值「水戶梅花祭」的舉辦期間，是偕樂園一年中最美的時刻。不同於櫻花的燦爛，梅花帶有高雅的香氣與孤傲的美感。自駕前往方便，園區廣大，您可以漫步在紅白相間的梅林隧道中，從好文亭俯瞰千波湖的冬日景致，感受江戶時代文人雅士的情懷。', 
+                        nav: 'Kairakuen', highlight: '可參觀好文亭', travelInfo: '市區 | 10分' 
+                    },
+                    { 
+                        id: 'd2-5', type: 'stay', time: '17:00', title: 'Dormy Inn 水戶', 
+                        desc: '位於水戶市中心的連鎖商務飯店，Dormy Inn 系列最大的特色就是擁有天然溫泉大浴場。水戶館的頂樓設有露天風呂，讓您在一天疲憊的駕駛後，能泡在熱湯中仰望星空，徹底放鬆肌肉。此外，飯店每晚提供免費的「夜鳴拉麵（醤油拉麵）」作為宵夜，是許多旅客最期待的暖心服務。早餐自助吧通常會提供當地的特色料理，如納豆料理或梅子相關配菜，讓您一早就充滿活力。', 
+                        nav: 'Dormy Inn Mito', highlight: '設施：大浴場/桑拿', travelInfo: '步行/短程' 
+                    },
+                    { 
+                        id: 'd2-6', type: 'food', time: '18:30', title: '晚餐：常陸牛', 
+                        desc: '茨城縣引以為傲的頂級黑毛和牛品牌，唯有通過嚴格標準的牛隻才能被冠上「常陸牛」的稱號。其特徵是如大理石般細緻分佈的霜降油花，肉質軟嫩，入口即化。常陸牛的脂肪熔點低，吃起來甘甜而不油膩。推薦以壽喜燒、燒肉或牛排的方式品嚐。在水戶市區有許多專賣店，雖然價格稍高，但其細膩的口感與豐富的肉汁絕對物超所值，是犒賞自駕辛勞的最佳選擇。', 
+                        nav: 'Restaurant Iijima', highlight: '必吃：牛排/壽喜燒' 
+                    }
+                ]
+            },
+            {
+                id: 'day3', dayLabel: 'Day 3', date: '2/10 (二)', title: '日光東照宮', location: '水戶 -> 日光',
+                coords: { lat: 36.7199, lon: 139.6982 }, // Nikko
+                events: [
+                    { id: 'd3-0', type: 'stay', time: '08:30', title: '出發：Dormy Inn 水戶', desc: '辦理退房。', nav: 'Dormy Inn Mito', highlight: '早餐後出發', travelInfo: '50km | 50分' },
+                    { 
+                        id: 'd3-1', type: 'sight', time: '09:20', title: '常陸國出雲大社', 
+                        desc: '位於笠間市，是島根縣出雲大社的分社，主祀大國主大神，以祈求結緣聞名。這裡最震撼的視覺焦點是拜殿上掛著的巨大「注連繩」，重達 6 噸，氣勢非凡，據說是日本最大級別之一。透過注連繩向神明投擲硬幣若能卡住，傳說願望就會實現。境內還有一座現代藝術風格的玻璃工坊與餐廳，氛圍莊嚴又不失現代感，是求姻緣與好運的熱門景點。', 
+                        nav: 'Hitachinokuni Izumo Taisha', highlight: '參拜時間約40-60分', travelInfo: '90km | 1.5小時' 
+                    },
+                    { id: 'd3-2', type: 'food', time: '12:20', title: '午餐：日光湯波料理', desc: '日光名物豆皮料理。推薦：和風餐廳 Yubazen。', nav: 'Yubazen Nikko', highlight: '豆皮料理', travelInfo: '短程 | 10分' },
+                    { 
+                        id: 'd3-3', type: 'sight', time: '13:30', title: '日光東照宮', 
+                        desc: '世界文化遺產，供奉江戶幕府初代將軍德川家康的神社。這裡以極致奢華、金碧輝煌的「陽明門」聞名於世，集結了當時全日本最頂尖的工匠技藝。著名的「三猿」（非禮勿視、非禮勿聽、非禮勿言）與「眠貓」木雕更是必看重點。冬季造訪時，雪花落在金色的屋簷與五重塔上，黑金白三色交織出莊嚴肅穆的美感。請預留 2-3 小時參觀，細細品味這座集結了日本近世權力與藝術巔峰的建築群。', 
+                        nav: 'Nikko Toshogu', highlight: '必看：三猿、眠貓、陽明門', travelInfo: '15km | 40分 (山路)' 
+                    },
+                    { 
+                        id: 'd3-4', type: 'sight', time: '15:40', title: '華嚴瀑布 & 中禪寺湖', 
+                        desc: '位於日光國立公園，是中禪寺湖的湖水流出所形成的壯麗瀑布，落差高達 97 公尺，名列「日本三大名瀑」之一。您可以搭乘專用電梯下降到瀑布底部的觀景台，近距離感受水流轟隆落下的震撼聲響與水氣。冬季時，瀑布周圍的小瀑布會結成藍白色的冰柱，主瀑布的水量雖會減少，但更顯得孤高冷冽。運氣好的話，還能看到冰雪與彩虹交織的夢幻景色，是日光冬天不可錯過的絕景。', 
+                        nav: 'Kegon Falls', highlight: '電梯16:30關閉', travelInfo: '50km | 1小時' 
+                    },
+                    { 
+                        id: 'd3-5', type: 'stay', time: '17:30', title: '東橫INN 宇都宮站前', 
+                        desc: '地理位置極佳，就位於 JR 宇都宮車站西口步行範圍內，周邊百貨公司、餐廳林立，生活機能非常完善。對於想品嚐宇都宮餃子的旅客來說，這裡簡直是天堂，因為著名的餃子街就在附近，您可以輕鬆步行去名店（如 Min Min 或 Masashi）排隊，吃完再慢慢散步回飯店。作為自駕的中繼站，這裡交通四通八達，飯店提供機械式停車塔，若滿車也會引導至周邊特約停車場，相當便利。', 
+                        nav: 'Toyoko Inn Utsunomiya-eki Mae 1', highlight: '', travelInfo: '步行' 
+                    },
+                    { 
+                        id: 'd3-6', type: 'food', time: '18:30', title: '晚餐：宇都宮餃子', 
+                        desc: '宇都宮市被稱為「餃子之都」，市內擁有超過 200 家餃子專賣店。這裡的餃子特色是蔬菜比例較高（如大白菜、高麗菜、韭菜），內餡多汁且口感清爽，即使多吃幾顆也不覺得油膩。常見的吃法有燒餃子、水餃子與揚餃子。建議您可以去「來らっせ (Kirasse)」這樣的餃子主題館，這裡集合了多家名店的餃子，讓您一次就能品嚐並比較不同店家的獨門風味。', 
+                        nav: 'Kirasse Honten', highlight: '餃子之都巡禮' 
+                    }
+                ]
+            },
+            {
+                id: 'day4', dayLabel: 'Day 4', date: '2/11 (三)', title: '雪國南魚沼', location: '宇都宮 -> 新潟',
+                coords: { lat: 37.0645, lon: 138.8785 }, // Minamiuonuma
+                events: [
+                    { id: 'd4-0', type: 'stay', time: '09:00', title: '出發：東橫INN 宇都宮', desc: '睡飽出發。', nav: 'Toyoko Inn Utsunomiya-eki Mae 1', highlight: '', travelInfo: '60km | 50分' },
+                    { 
+                        id: 'd4-1', type: 'sight', time: '10:30', title: '少林山達摩寺', 
+                        desc: '位於群馬縣高崎市，是日本象徵吉祥的「達摩不倒翁」的發源地。寺廟依山而建，境內堆滿了成千上萬個被參拜者供奉的達摩，紅通通的一片視覺效果非常驚人。您可以在此求一個達摩，許願時畫上左眼，願望實現後再畫上右眼並帶回來還願。冬季造訪時，紅色的達摩與白雪形成強烈對比，是非常適合拍照並祈求旅途平安與新年好運的靈氣景點。', 
+                        nav: 'Shorinzan Darumaji', highlight: '購買達摩許願', travelInfo: '市區 | 20分' 
+                    },
+                    { 
+                        id: 'd4-2', type: 'food', time: '11:30', title: '午餐：登利平 鳥飯', 
+                        desc: '群馬縣民無人不知的靈魂美食，甚至被稱為群馬縣的「縣民便當」。登利平的招牌「鳥飯」使用秘傳醬汁燒烤的薄切雞胸肉與雞腿肉，鋪滿在熱騰騰的白飯上。醬汁鹹甜適中，滲透進米飯裡，雞肉軟嫩不乾柴，簡單卻有著令人上癮的美味。對於自駕旅客來說，買一份在車上吃，或是去公園野餐，都是體驗群馬在地生活的最佳方式。', 
+                        nav: 'Torihei Honten', travelInfo: '120km | 2小時 (關越道)' 
+                    },
+                    { 
+                        id: 'd4-4', type: 'sight', time: '14:30', title: '魚沼之里', 
+                        desc: '位於以豪雪與頂級越光米聞名的新潟縣南魚沼市，是由知名清酒品牌「八海山」所營運的複合式園區。這裡最特別的是「雪室」，利用冬季堆積的龐大雪量來天然冷藏清酒與蔬菜，您可以參觀這個充滿先人智慧的設施。園區內散佈著風格洗鍊的咖啡廳、麵包店、社員食堂與販賣部，建築融入雪國風景中。冬季來訪時，這裡是一片銀白世界，您可以在雪景中品嚐使用清酒酒粕製作的甜點，享受優雅的午後時光。', 
+                        nav: 'Uonuma no Sato', highlight: '必逛：雪室、伴手禮', travelInfo: '15km | 20分' 
+                    },
+                    { 
+                        id: 'd4-5', type: 'stay', time: '16:00', title: '坂戶城 溫泉旅館', 
+                        desc: '這裡是戰國時代上杉家名將、直江兼續的居城遺跡，位於六日町盆地的小山上。雖然天守閣已不復存在，但保留了石垣與土壘等遺跡。對於歷史迷來說，這裡是緬懷「愛」之武將的聖地。冬季時，整座城跡被厚厚的白雪覆蓋，從山腳仰望非常有氣勢。雖然冬季登山較困難，但您可以造訪山腳下的「坂戶城跡公園」或相關資料館，遙想當年戰國武將在雪國生存的艱辛與豪情。', 
+                        nav: 'Sakadojo', highlight: '提早入住享受溫泉', travelInfo: '接駁/短程' 
+                    },
+                    { 
+                        id: 'd4-6', type: 'food', time: '18:00', title: '晚餐：南魚沼越光米', 
+                        desc: '來到全日本最知名的「魚沼越光米」產地，晚餐的主角絕對是米飯。南魚沼的餐廳通常會標榜使用「釜戶炊煮」的特A級越光米，米粒晶瑩剔透，黏性與甜度皆是頂級。推薦搭配當地的鄉土料理，如「切蘿蔔乾煮物」、「烤岩魚」或是簡單的「飯糰」。如果您想吃好一點，這裡也有品質極佳的新潟和牛。在寒冷的冬夜，找一間當地的居酒屋或食堂，一口熱飯、一口地酒，是味蕾的極致享受。', 
+                        nav: 'Keyaki Tei', highlight: '推薦：Keyaki Tei 洋食' 
+                    }
+                ]
+            },
+            {
+                id: 'day5', dayLabel: 'Day 5', date: '2/12 (四)', title: '工藝與能量', location: '南魚沼 -> 新潟',
+                coords: { lat: 37.6366, lon: 138.9616 }, // Sanjo
+                events: [
+                    { id: 'd5-0', type: 'stay', time: '08:15', title: '出發：坂戶城', desc: '辦理退房，提早出發以免塞車。', nav: 'Sakadojo', highlight: '雪地駕車小心', travelInfo: '60km | 50分' },
+                    { 
+                        id: 'd5-1', type: 'sight', time: '09:45', title: '三条鍛冶道場', 
+                        desc: '新潟縣三条市是世界聞名的金屬加工與鍛造重鎮。這個道場是為了傳承鍛造技術而設，開放給一般遊客體驗。在這裡，您可以親手體驗製作「和釘」或「拆信刀」。在職人的指導下，將燒得火紅的鐵塊敲打成型，感受金屬的溫度與延展性，是非常難得的實作體驗。完成的作品可以帶回家作紀念。這裡也展示了各種精美的職人工具，是深度了解日本工藝精神的好地方。', 
+                        nav: 'Sanjo Blacksmith Dojo', highlight: '上午場只到11:00', travelInfo: '20km | 30分' 
+                    },
+                    { 
+                        id: 'd5-2', type: 'sight', time: '11:00', title: '彌彥神社', 
+                        desc: '越後地區的一之宮，是新潟縣地位最高、香火最鼎盛的神社。神社座落在神聖的彌彥山腳下，被古老的杉木林環繞，氣氛莊嚴清幽。這裡供奉的天香山命是傳授農耕、製鹽與捕魚的神明。冬季時，參道兩旁的雪景與朱紅色的鳥居相互映襯，美不勝收。參拜完後，您可以搭乘附近的彌彥山纜車上山，眺望日本海與越後平原的遼闊景色，或是去附近的溫泉街泡個足湯。', 
+                        nav: 'Yahiko Shrine', highlight: '午餐：釜飯彌醉亭 或 熊貓燒', travelInfo: '40km | 50分' 
+                    },
+                    { 
+                        id: 'd5-3', type: 'sight', time: '15:30', title: 'Pier Bandai', 
+                        desc: '位於新潟市區、信濃川河口附近的超大型複合式市場，被譽為新潟的「食之主題樂園」。這裡集合了市場、迴轉壽司、鮮魚中心、肉舖與酒鋪。您可以在這裡買到剛上岸的新鮮海鮮、新潟和牛以及種類超齊全的新潟地酒。最推薦這裡的「弁慶」迴轉壽司，使用佐渡島直送的魚貨，CP值極高。自駕旅客可以在這裡大快朵頤，並購買米果、清酒等新潟特產作為伴手禮。', 
+                        nav: 'Pier Bandai', highlight: '推薦：弁慶壽司、爆彈飯糰', travelInfo: '市區 | 10分' 
+                    },
+                    { 
+                        id: 'd5-4', type: 'stay', time: '17:00', title: '東橫INN 新潟站前', 
+                        desc: '位於新潟交通樞紐的絕佳位置，距離新潟車站萬代口步行僅需幾分鐘。周邊是新潟最熱鬧的繁華街，居酒屋、拉麵店林立，晚餐選擇非常豐富。對於自駕者來說，飯店後方與周邊有配合的停車場。這間飯店的一大優點是方便前往「万代 City」商圈與「Pier Bandai」市場。早晨出發前，您可以在大廳享用簡單的飯糰早餐，補充滿滿的碳水化合物，為接下來的雪國自駕之旅做好準備。', 
+                        nav: 'Toyoko Inn Niigata Ekimae', highlight: '', travelInfo: '步行' 
+                    },
+                    { 
+                        id: 'd5-5', type: 'food', time: '18:00', title: '晚餐：新潟站前', 
+                        desc: '新潟車站前居酒屋激戰區。推薦嘗試新潟名物「醬汁豬排丼」(Tare-Katsu)，不同於長野，新潟版本是將薄切豬排沾滿甜鹹醬油醬汁，不加蛋液。此外，「布海苔蕎麥麵」(Hegi Soba) 也是必吃，麵條加入海藻，口感Q彈。', 
+                        nav: 'Niigata Station', highlight: '推薦：炸豬排太郎(醬汁豬排)、須坂屋(布海苔蕎麥麵)' 
+                    }
+                ]
+            },
+            {
+                id: 'day6', dayLabel: 'Day 6', date: '2/13 (五)', title: '野猿公苑與壽司', location: '新潟 -> 長野',
+                coords: { lat: 36.7329, lon: 138.4621 }, // Jigokudani
+                events: [
+                    { id: 'd6-0', type: 'stay', time: '09:00', title: '出發：東橫INN 新潟站前', desc: '辦理退房，出發前往妙高/長野方向。', nav: 'Toyoko Inn Niigata Ekimae', highlight: '確認車況與雪胎', travelInfo: '110km | 1小時45分' },
+                    { 
+                        id: 'd6-1', type: 'transport', time: '10:45', title: '道之驛 Arai (午餐)', 
+                        desc: '位於上信越自動車道旁，是一個與高速公路休息站連通的「Highway Oasis」。這裡不僅是休息站，更像是一個美食聚落。最著名的是「Kito Kito 壽司」，提供來自富山灣的新鮮海鮮（如白蝦、螢烏賊）。此外，這裡還有拉麵店、Sukiya 以及販售新潟特產的市場。對於開車往返新潟與長野的旅客來說，這裡是最佳的午餐點。停車場非常大，即使是冬季雪天也會除雪完善。', 
+                        nav: 'Roadside Station Arai', highlight: '必吃：白蝦/鰤魚/螃蟹', travelInfo: '休息站內' 
+                    },
+                    { id: 'd6-2', type: 'food', time: '12:00', title: 'Kito Kito 壽司', desc: '享用美味壽司午餐。平板點餐，出餐快速。', nav: 'Kito Kito Sushi Arai', highlight: '平板點餐', travelInfo: '45km | 45分' },
+                    { id: 'd6-3', type: 'transport', time: '12:45', title: '前往野猿公苑', desc: '信州中野IC下，往志賀高原。', nav: 'Jigokudani Monkey Park Parking', highlight: 'MapCode: 341 740 584*55', travelInfo: '步行 1.6km (30分)' },
+                    { 
+                        id: 'd6-4', type: 'sight', time: '13:40', title: '地獄谷野猿公苑', 
+                        desc: '全球唯一可以看到野生猴子（日本獼猴）泡溫泉的地方，是長野縣冬季最國際化的景點。猴子們為了抵禦嚴寒，會跳入溫泉中取暖，一臉陶醉的表情非常療癒。要看到這個奇景，您需要從停車場步行約 30 分鐘的山路（冬季為雪道）。這裡沒有圍欄，猴子就在您腳邊自由活動，請務必遵守規則：不餵食、不觸摸、不對視。冬季造訪請務必穿著防滑雪靴，這段雪地健行將是旅程中難忘的冒險。', 
+                        nav: 'Jigokudani Monkey Park', highlight: '裝備：手套/毛帽/防滑鞋', travelInfo: '步行回程+駕車 (35km | 50分)' 
+                    },
+                    { id: 'd6-5', type: 'transport', time: '15:30', title: '前往長野市區', desc: '天黑前下山，前往飯店。', nav: 'Toyoko Inn Nagano-eki Higashi-guchi', highlight: '小心傍晚路況', travelInfo: '市區 | 10分' },
+                    { 
+                        id: 'd6-6', type: 'stay', time: '16:20', title: '東橫INN 長野站東口', 
+                        desc: '相較於熱鬧的善光寺口，東口屬於較新開發的區域，環境相對寧靜寬敞，道路規劃也較適合自駕者進出。這間東橫INN就在車站旁，飯店備有大型機械式停車塔。步行穿越車站通道即可抵達熱鬧的西口（善光寺口）覓食，享受車站大樓 MIDORI 的購物便利，卻又能保有住宿的安靜品質。是遊覽長野市區、善光寺與戶隱神社的理想基地。', 
+                        nav: 'Toyoko Inn Nagano-eki Higashi-guchi', highlight: '機械停車塔', travelInfo: '步行' 
+                    },
+                    { 
+                        id: 'd6-7', type: 'food', time: '18:00', title: '晚餐：長野站前', 
+                        desc: '兩大推薦：1. 「醬汁豬排丼」(明治亭)：這是長野縣駒根市的靈魂美食。將剛炸好、熱騰騰的厚切豬排，浸入特製的鹹甜醬汁中，鋪在堆滿高麗菜絲的白飯上，解膩又下飯。2. 「味噌家」(Misoya)：主打信州味噌拉麵，湯頭濃郁醇厚，鋪滿大火快炒過的豆芽菜，鑊氣十足。', 
+                        nav: 'Nagano Station', highlight: '推薦：明治亭(醬汁豬排)、味噌家(拉麵)' 
+                    }
+                ]
+            },
+            {
+                id: 'day7', dayLabel: 'Day 7', date: '2/14 (六)', title: '安曇野與諏訪', location: '長野 -> 甲府',
+                coords: { lat: 36.0485, lon: 138.1130 }, // Suwa
+                events: [
+                    { id: 'd7-0', type: 'stay', time: '09:00', title: '出發：東橫INN 長野', desc: '辦理退房。', nav: 'Toyoko Inn Nagano-eki Higashi-guchi', highlight: '', travelInfo: '60km | 50分' },
+                    { 
+                        id: 'd7-1', type: 'sight', time: '10:15', title: '穂高神社', 
+                        desc: '位於安曇野市，被北阿爾卑斯群山環抱的神社，供奉的是海神（穂高見命），守護著交通安全與產業繁榮，因此非常適合自駕旅客來此祈求行車平安。神社境內古木參天，氣氛空靈潔淨，被認為是強大的能量景點。這裡還有一尊獨特的「健康長壽道祖神」，是不銹鋼製成的現代藝術雕像。參拜後，不妨在周邊優美的安曇野田園風景中散步，感受北阿爾卑斯山的壯麗。', 
+                        nav: 'Hotaka Shrine', highlight: '順遊大王山葵農場', travelInfo: '短程 | 10分' 
+                    },
+                    { 
+                        id: 'd7-2', type: 'food', time: '11:30', title: '午餐：信州蕎麥麵', 
+                        desc: '長野縣（信州）是蕎麥麵的發源地之一，因地形高、溫差大且水質純淨，種出的蕎麥品質極佳。信州蕎麥麵的特色是香氣濃郁、口感滑順有嚼勁。在長野，您可以看到許多手打蕎麥麵店。吃法通常是冷麵沾醬汁，最後再喝下煮麵水，這是最道地的享受。冬季也有熱騰騰的湯麵選擇，搭配山菜或天婦羅。', 
+                        nav: 'Sobadokoro Kamijo', highlight: '推薦：そば処上條', travelInfo: '50km | 1小時' 
+                    },
+                    { 
+                        id: 'd7-3', type: 'sight', time: '14:00', title: '立石公園 (諏訪湖)', 
+                        desc: '位於諏訪湖東北側的高地上，是俯瞰整個諏訪湖全景的最佳地點。這裡因為景色酷似動畫電影《你的名字》中「糸守湖」的黃昏場景而爆紅。無論是白天眺望日本阿爾卑斯山連峰倒映在湖面，還是黃昏時分欣賞夕陽將湖面染成金黃色，景色都極為震撼。這裡也是觀賞諏訪湖夜景的勝地。公園內設有大型溜滑梯，適合親子同樂。自駕可直接開車上山，有免費停車場。', 
+                        nav: 'Tateishi Park', highlight: '立石公園俯瞰全景', travelInfo: '60km | 1小時' 
+                    },
+                    { 
+                        id: 'd7-4', type: 'stay', time: '17:15', title: 'Dormy Inn 甲府', 
+                        desc: '位於甲府市中心，距離甲府車站步行約 15 分鐘，是探索山梨縣的舒適據點。這間 Dormy Inn 最大的亮點是頂樓的天然溫泉「勝運之湯」，泉質為琥珀色的碳酸氫鹽泉，號稱「美人之湯」，露天風呂還能眺望甲府市景與遠處的富士山。飯店同樣提供免費的夜鳴拉麵。早餐非常豐盛，提供山梨縣特色的「餺飥麵」與「鳥内臟煮」，讓您在飯店內就能品嚐在地美味。', 
+                        nav: 'Dormy Inn Kofu Marunouchi', highlight: '', travelInfo: '步行' 
+                    },
+                    { 
+                        id: 'd7-5', type: 'food', time: '18:30', title: '晚餐：甲府餺飥麵', 
+                        desc: '山梨縣最具代表性的鄉土料理，相傳是戰國武將武田信玄的野戰食品。特徵是使用寬扁的麵條，加入大量的南瓜、蔬菜與豬肉，放入味噌湯底中燉煮。與一般烏龍麵不同，餺飥麵不需過冷水，直接燉煮讓湯頭變得濃稠，充滿蔬菜的甜味。在寒冷的甲府盆地冬天，一鍋熱滾滾的餺飥麵能迅速溫暖身體並補充營養，著名的店家如「小作」或「不動」都極具特色。', 
+                        nav: 'Kosaku Kofu Station', highlight: '推薦：小作 (南瓜餺飥)' 
+                    }
+                ]
+            },
+            {
+                id: 'day8', dayLabel: 'Day 8', date: '2/15 (日)', title: '富士山與箱根', location: '甲府 -> 箱根',
+                coords: { lat: 35.4925, lon: 138.7562 }, // Kawaguchiko
+                events: [
+                    { id: 'd8-0', type: 'stay', time: '09:00', title: '出發：Dormy Inn 甲府', desc: '辦理退房。', nav: 'Dormy Inn Kofu Marunouchi', highlight: '', travelInfo: '40km | 50分' },
+                    { 
+                        id: 'd8-1', type: 'sight', time: '10:00', title: '河口湖 大石公園', 
+                        desc: '位於河口湖北岸，是拍攝「逆富士」（富士山倒映在湖面）的絕佳地點之一。這裡一年四季都有不同的花卉前景，雖然冬季沒有著名的薰衣草或掃帚草，但冬季的空氣最為澄澈，看到完整富士山的機率最高。園區內的「河口湖自然生活館」擁有視野極佳的咖啡座。您可以在這裡買一支藍莓霜淇淋，背景襯著壯麗的雪白富士山，拍下最經典的打卡照。', 
+                        nav: 'Oishi Park', highlight: '最佳拍照點', travelInfo: '10km | 20分' 
+                    },
+                    { 
+                        id: 'd8-2', type: 'food', time: '11:30', title: '午餐：吉田烏龍麵', 
+                        desc: '富士吉田市的在地庶民美食，以「全日本最硬」的麵條著稱。這種烏龍麵條極粗且嚼勁十足，湯頭通常是味噌與醬油的混合，配料必定有燙高麗菜與馬肉，並佐以特製的辛辣調味醬「Suridane」。這原本是當地織布職人為了節省吃飯時間、又能耐餓而發明的料理。初次嘗試可能會對其硬度感到驚訝，但越嚼越香的麵粉味會讓人上癮。', 
+                        nav: 'Kuranosuke', highlight: '推薦：蔵ノ介', travelInfo: '50km | 1小時15分' 
+                    },
+                    { 
+                        id: 'd8-3', type: 'sight', time: '14:00', title: '箱根神社 & 平和鳥居', 
+                        desc: '座落在蘆之湖畔，擁有超過 1200 年歷史，是關東地區總鎮守。最著名的地標是矗立在湖水中的紅色「平和的鳥居」，在波光粼粼的湖水與背後富士山的襯托下，營造出神秘而神聖的氛圍，是箱根最熱門的拍照景點。神社境內古杉參天，空氣充滿芬多精。除了祈求開運厄除，這裡的「九頭龍神社」分社也以祈求良緣靈驗而聞名，吸引無數年輕男女前來參拜。', 
+                        nav: 'Hakone Shrine', highlight: '經御殿場、仙石原', travelInfo: '20km | 40分 (下坡)' 
+                    },
+                    { id: 'd8-4', type: 'stay', time: '17:00', title: '小田原 住宿', desc: '下山前往小田原。', nav: 'Odawara Station', highlight: '', travelInfo: '步行' },
+                    { 
+                        id: 'd8-5', type: 'food', time: '18:00', title: '晚餐：小田原關東煮', 
+                        desc: '小田原是著名的魚板產地，利用當地豐富的漁獲製作的關東煮自然不同凡響。小田原關東煮的特色有三：一是必須使用小田原產的魚漿製品，二是湯頭鮮美清澈，三是食用時要沾「梅子味噌」醬。這個特製的梅子味噌，利用了小田原另一特產「梅子」，酸酸甜甜的口感讓關東煮吃起來更加清爽開胃。在冬夜裡點幾串熱呼呼的蘿蔔、魚餅與牛筋，配上清酒，是極致的享受。', 
+                        nav: 'Odawara Oden Honten', highlight: '需預約' 
+                    }
+                ]
+            },
+            {
+                id: 'day9', dayLabel: 'Day 9', date: '2/16 (一)', title: '湘南海岸', location: '小田原 -> 橫濱',
+                coords: { lat: 35.3192, lon: 139.5467 }, // Kamakura
+                events: [
+                    { id: 'd9-0', type: 'stay', time: '09:30', title: '出發：小田原', desc: '辦理退房，出發前往湘南。', nav: 'Odawara Station', highlight: '', travelInfo: '30km | 50分 (海岸)' },
+                    { 
+                        id: 'd9-1', type: 'sight', time: '09:30', title: '鎌倉高校前', 
+                        desc: '江之島電鐵的一個無人小站，卻因為動畫《灌籃高手》片頭曲中，櫻木花道與晴子揮手的平交道場景而紅遍全球。站在平交道前，看著復古的綠色電車駛過，背景是波光粼粼的湘南海岸與江之島，彷彿置身於青春的熱血回憶中。雖然景點不大，但那份感動是無可取代的。提醒您拍照時請務必注意交通安全，不要妨礙車輛通行。', 
+                        nav: 'Kamakurakokomae Station', highlight: '鎌倉高校前平交道', travelInfo: '10km | 30分' 
+                    },
+                    { 
+                        id: 'd9-2', type: 'food', time: '10:30', title: '早午餐：Pacific DRIVE-IN', 
+                        desc: '位於七里濱海岸停車場內的超人氣海景咖啡廳，主打夏威夷風格料理。這裡擁有絕佳的視野，正對著江之島，天氣好時還能清楚看見富士山。店內招牌是蒜蓉蝦飯與各式鬆餅，口味非常道地。這裡原本就是為了「Drive-in」設計的，非常適合自駕旅客。在陽光普照的日子，買杯咖啡坐在戶外露台，吹著海風，看著衝浪客與老鷹飛翔，感受湘南海岸特有的悠閒與美式風情。', 
+                        nav: 'Pacific DRIVE-IN', highlight: '必吃：蒜味蝦飯', travelInfo: '5km | 20分' 
+                    },
+                    { 
+                        id: 'd9-3', type: 'sight', time: '12:00', title: '鎌倉大佛', 
+                        desc: '位於高德院內，是日本國寶，也是鎌倉最顯著的象徵。這尊阿彌陀如來坐像高約 11.3 公尺，重達 121 噸，是著名的「露天大佛」。大佛面容慈祥，微微前傾，彷彿在俯瞰眾生。您可以付費進入大佛的「胎內」參觀，了解其鑄造工藝。與奈良大佛相比，鎌倉大佛更顯得古樸與堅毅，是日本佛教藝術的傑作。', 
+                        nav: 'Kotoku-in', highlight: '建議停長谷寺或鎌倉站', travelInfo: '25km | 40分' 
+                    },
+                    { 
+                        id: 'd9-4', type: 'stay', time: '16:30', title: '東橫INN 橫濱體育場前', 
+                        desc: '位於橫濱市中心，地理位置極為優越。顧名思義，對面就是橫濱DeNA海灣之星的主場「橫濱體育場」，旁邊就是美麗的橫濱公園。從這裡步行至中華街僅需 3 分鐘，走到山下公園、紅磚倉庫等港區景點也都在步行範圍內。對於想在橫濱港區漫遊的旅客來說，這裡是CP值極高的住宿點。飯店旁有著名的「關內」車站，周邊充滿了明治時期的西洋建築與現代高樓交錯的獨特港都風情。', 
+                        nav: 'Toyoko Inn Yokohama Stadium Mae No.1', highlight: '', travelInfo: '步行' 
+                    },
+                    { 
+                        id: 'd9-5', type: 'food', time: '18:00', title: '晚餐：橫濱中華街', 
+                        desc: '日本最大、也是東亞最大的中華街，擁有超過 500 家以上的餐廳與店舖。這裡充滿了濃厚的中國色彩，巨大的牌樓、紅色的燈籠與喧鬧的人聲。您可以品嚐到各式各樣的中華料理，從精緻的廣東飲茶、麻辣的四川料理到邊走邊吃的熊貓包子、糖炒栗子與炸芝麻球。對於自駕旅程的尾聲，來這裡大吃一頓，感受異國風情的熱鬧氛圍，是個快樂的句點。', 
+                        nav: 'Yokohama Chinatown', highlight: '推薦：橫濱大飯店、同發本館' 
+                    }
+                ]
+            },
+            {
+                id: 'day10', dayLabel: 'Day 10', date: '2/17 (二)', title: '歸途', location: '橫濱 -> 成田',
+                coords: { lat: 35.7719, lon: 140.3929 },
+                events: [
+                    { id: 'd10-0', type: 'stay', time: '09:00', title: '出發：東橫INN 橫濱', desc: '辦理退房，前往機場。', nav: 'Toyoko Inn Yokohama Stadium Mae No.1', highlight: '檢查護照/行李', travelInfo: '90km | 1.5小時' },
+                    { id: 'd10-1', type: 'transport', time: '09:00', title: '前往成田機場', desc: '預留充裕時間還車。', nav: 'Narita International Airport', highlight: '還車期限：13:00前', travelInfo: '機場內' },
+                    { id: 'd10-2', type: 'transport', time: '13:00', title: '還車 & 登機', desc: 'Toyota Rent a Car 成田機場店還車。', nav: 'Toyota Rent a Car Narita Airport', highlight: '星宇航空 JX801' }
+                ]
+            }
+        ];
 
-        init();
+        // --- IndexedDB ---
+        const DB_NAME = 'JapanTripDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'userData';
+
+        const dbHelper = {
+            open: () => new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                };
+                request.onsuccess = (e) => resolve(e.target.result);
+                request.onerror = (e) => reject(e.target.error);
+            }),
+            save: async (id, data) => {
+                const db = await dbHelper.open();
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                tx.objectStore(STORE_NAME).put({ id, ...data });
+            },
+            get: async (id) => {
+                const db = await dbHelper.open();
+                return new Promise((resolve) => {
+                    const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(id);
+                    req.onsuccess = () => resolve(req.result);
+                });
+            },
+            getAll: async () => {
+                const db = await dbHelper.open();
+                return new Promise((resolve) => {
+                    const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).getAll();
+                    req.onsuccess = () => resolve(req.result);
+                });
+            },
+            clear: async () => {
+                 const db = await dbHelper.open();
+                 const tx = db.transaction(STORE_NAME, 'readwrite');
+                 tx.objectStore(STORE_NAME).clear();
+            }
+        };
+
+        // --- Components ---
+
+        const WeatherWidget = ({ coords }) => {
+            const [weather, setWeather] = useState(null);
+
+            useEffect(() => {
+                if(coords) {
+                    fetchWeather(coords.lat, coords.lon).then(setWeather);
+                }
+            }, [coords]);
+
+            if (!weather) return <div className="text-xs text-gray-500 flex items-center gap-1"><div className="spinner"></div> 載入天氣...</div>;
+
+            const wCode = weatherCodes[weather.weathercode] || weatherCodes[0];
+            
+            return (
+                <div className="flex items-center gap-2 bg-black/40 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md shadow-lg">
+                    <i className={`fas ${wCode.icon} ${wCode.color} text-lg`}></i>
+                    <div className="flex flex-col leading-none">
+                        <span className="text-lg font-bold text-white">{weather.temperature}<span className="text-xs font-normal">°C</span></span>
+                        <span className="text-[10px] text-gray-300">{wCode.label}</span>
+                    </div>
+                </div>
+            );
+        };
+
+        const InfoTool = () => (
+             <div className="space-y-4 animation-fade-in">
+                <div className="bg-jp-dark p-4 rounded-xl shadow-lg border-l-4 border-blue-500">
+                    <h3 className="text-white font-bold mb-2 flex items-center"><i className="fas fa-plane mr-2 text-blue-400"></i>航班資訊</h3>
+                    <div className="space-y-3 text-sm text-gray-300">
+                        <div className="flex justify-between items-center bg-black/20 p-2 rounded">
+                            <div><span className="block text-white font-bold">GK14</span> <span className="text-xs">2/8 去程</span></div>
+                            <div className="text-right"><span className="block text-white">12:50 TPE</span><span className="block text-white">16:55 NRT</span></div>
+                        </div>
+                        <div className="flex justify-between items-center bg-black/20 p-2 rounded">
+                            <div><span className="block text-white font-bold">JX801</span> <span className="text-xs">2/17 回程</span></div>
+                            <div className="text-right"><span className="block text-white">13:40 NRT</span><span className="block text-white">16:45 TPE</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-jp-dark p-4 rounded-xl shadow-lg border-l-4 border-purple-500">
+                    <h3 className="text-white font-bold mb-2 flex items-center"><i className="fas fa-hotel mr-2 text-purple-400"></i>住宿清單</h3>
+                    <div className="text-sm text-gray-300 space-y-2 max-h-60 overflow-y-auto">
+                        <div className="flex justify-between border-b border-gray-700 pb-1"><span>2/8</span> <span className="text-white">東橫INN 成田機場</span></div>
+                        <div className="flex justify-between border-b border-gray-700 pb-1"><span>2/9</span> <span className="text-white">Dormy Inn 水戶</span></div>
+                        <div className="flex justify-between border-b border-gray-700 pb-1"><span>2/10</span> <span className="text-white">東橫INN 宇都宮</span></div>
+                        <div className="flex justify-between border-b border-gray-700 pb-1"><span>2/11</span> <span className="text-white">坂戶城 (六日町)</span></div>
+                        <div className="flex justify-between border-b border-gray-700 pb-1"><span>2/12</span> <span className="text-white">東橫INN 新潟</span></div>
+                        <div className="flex justify-between border-b border-gray-700 pb-1"><span>2/13</span> <span className="text-white">東橫INN 長野</span></div>
+                        <div className="flex justify-between border-b border-gray-700 pb-1"><span>2/14</span> <span className="text-white">Dormy Inn 甲府</span></div>
+                        <div className="flex justify-between border-b border-gray-700 pb-1"><span>2/15</span> <span className="text-white">小田原 住宿</span></div>
+                        <div className="flex justify-between border-b border-gray-700 pb-1"><span>2/16</span> <span className="text-white">東橫INN 橫濱</span></div>
+                    </div>
+                </div>
+
+                <div className="bg-jp-dark p-4 rounded-xl shadow-lg border-l-4 border-red-500">
+                    <h3 className="text-white font-bold mb-2 flex items-center"><i className="fas fa-phone mr-2 text-red-400"></i>緊急聯絡</h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                        <a href="tel:110" className="bg-red-900/40 py-2 rounded text-center block hover:bg-red-900/60 transition-colors">警察 110</a>
+                        <a href="tel:119" className="bg-red-900/40 py-2 rounded text-center block hover:bg-red-900/60 transition-colors">救護 119</a>
+                        <div className="col-span-2 bg-gray-700/40 p-2 rounded text-center text-xs">
+                            外交部旅外急難救助：+81-80-1009-7179
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const BudgetTool = () => {
+            const [items, setItems] = useState([]);
+            const [newItem, setNewItem] = useState({ desc: '', cost: '' });
+            const [total, setTotal] = useState(0);
+
+            useEffect(() => {
+                dbHelper.get('budget').then(data => {
+                    if (data && data.items) setItems(data.items);
+                });
+            }, []);
+
+            useEffect(() => {
+                const sum = items.reduce((acc, item) => acc + Number(item.cost), 0);
+                setTotal(sum);
+                if (items.length > 0) dbHelper.save('budget', { items });
+            }, [items]);
+
+            const addItem = () => {
+                if (!newItem.desc || !newItem.cost) return;
+                setItems([{ ...newItem, id: Date.now() }, ...items]);
+                setNewItem({ desc: '', cost: '' });
+            };
+
+            const deleteItem = (id) => {
+                setItems(items.filter(i => i.id !== id));
+            };
+
+            return (
+                <div className="bg-jp-dark p-4 rounded-xl shadow-lg card-shadow animation-fade-in border border-white/5">
+                    <h3 className="text-jp-gold font-bold mb-4 flex items-center justify-between">
+                        <span><i className="fas fa-wallet mr-2"></i>旅費記帳</span>
+                        <span className="text-2xl font-mono">¥{total.toLocaleString()}</span>
+                    </h3>
+                    <div className="flex gap-2 mb-4">
+                        <input 
+                            type="text" 
+                            placeholder="項目 (如: 拉麵)" 
+                            className="flex-[2] p-3 text-sm bg-black/40 border-gray-700 rounded-lg focus:border-jp-gold transition-colors"
+                            value={newItem.desc}
+                            onChange={e => setNewItem({...newItem, desc: e.target.value})}
+                        />
+                        <input 
+                            type="number" 
+                            placeholder="¥" 
+                            className="flex-1 p-3 text-sm bg-black/40 border-gray-700 rounded-lg focus:border-jp-gold transition-colors"
+                            value={newItem.cost}
+                            onChange={e => setNewItem({...newItem, cost: e.target.value})}
+                        />
+                        <button onClick={addItem} className="bg-jp-gold text-black px-4 rounded-lg font-bold hover:bg-yellow-500 shadow-lg shadow-yellow-600/20 active:scale-95 transition-all">
+                            <i className="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
+                        {items.map(item => (
+                            <div key={item.id} className="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5 text-sm hover:bg-white/10 transition-colors">
+                                <span className="text-white">{item.desc}</span>
+                                <div className="flex items-center gap-3">
+                                    <span className="font-mono text-gray-300">¥{Number(item.cost).toLocaleString()}</span>
+                                    <button onClick={() => deleteItem(item.id)} className="text-red-500 w-6 h-6 flex items-center justify-center bg-red-500/10 rounded-full hover:bg-red-500/30">
+                                        <i className="fas fa-times text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {items.length === 0 && <div className="text-center text-gray-600 py-4 text-xs italic">尚未新增消費紀錄</div>}
+                    </div>
+                </div>
+            );
+        };
+
+        const CardModal = ({ event, userData, onClose, onUpdateUserData }) => {
+            const fileInputRef = useRef(null);
+            
+            const handlePhotoUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const newPhotos = [...(userData?.photos || []), reader.result];
+                    onUpdateUserData(event.id, { ...userData, photos: newPhotos });
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.nav)}`;
+            const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(event.nav)}`;
+
+            const headerColor = {
+                transport: 'bg-jp-indigo', sight: 'bg-jp-red', food: 'bg-jp-gold', stay: 'bg-purple-600'
+            }[event.type] || 'bg-gray-600';
+
+            return (
+                <div className="fixed inset-0 z-[60] flex flex-col bg-[#121212] animation-slide-up">
+                    <div className="relative h-64 shrink-0 bg-gray-800">
+                        {userData?.photos && userData.photos.length > 0 ? (
+                            <img src={userData.photos[0]} className="w-full h-full object-cover opacity-80" />
+                        ) : (
+                            <div className={`w-full h-full ${headerColor} opacity-50 flex items-center justify-center`}>
+                                <i className={`fas fa-image text-4xl text-white/30`}></i>
+                            </div>
+                        )}
+                        <button onClick={onClose} className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 backdrop-blur">
+                            <i className="fas fa-times text-lg"></i>
+                        </button>
+                        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#121212] to-transparent">
+                            <span className="inline-block px-2 py-0.5 rounded bg-white/20 text-white text-xs mb-2 backdrop-blur-sm border border-white/20">
+                                {event.time}
+                            </span>
+                            <h2 className="text-3xl font-bold text-white leading-tight shadow-black drop-shadow-md">{event.title}</h2>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-6 pb-24">
+                        <div className="flex gap-3 mb-6">
+                            <a href={navUrl} target="_blank" rel="noopener noreferrer" className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 active:scale-95 transition-transform no-underline">
+                                <i className="fas fa-location-arrow"></i> 導航
+                            </a>
+                             <a href={searchUrl} target="_blank" rel="noopener noreferrer" className="flex-1 bg-gray-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform no-underline">
+                                <i className="fab fa-google"></i> 搜尋
+                            </a>
+                        </div>
+
+                        <div className="mb-6">
+                            <h3 className="text-jp-gold text-sm font-bold uppercase tracking-wider mb-2">關於此地</h3>
+                            <p className="text-gray-300 leading-relaxed text-lg whitespace-pre-line">{event.desc}</p>
+                        </div>
+
+                        {event.highlight && (
+                            <div className="mb-6 p-4 bg-jp-gold/10 border-l-4 border-jp-gold rounded-r-lg">
+                                <h3 className="text-jp-gold text-sm font-bold mb-1"><i className="fas fa-lightbulb mr-2"></i>攻略筆記</h3>
+                                <p className="text-gray-200">{event.highlight}</p>
+                                {event.subInfo && <p className="text-gray-400 text-sm mt-1">{event.subInfo}</p>}
+                            </div>
+                        )}
+
+                        <div className="mb-8">
+                            <h3 className="text-jp-gold text-sm font-bold uppercase tracking-wider mb-2">我的備註</h3>
+                            <textarea 
+                                className="w-full bg-gray-800 text-white p-4 rounded-xl border border-gray-700 focus:border-jp-gold min-h-[120px] text-base"
+                                placeholder="寫下旅行心情或備忘錄..."
+                                value={userData?.notes || ''}
+                                onChange={(e) => onUpdateUserData(event.id, { ...userData, notes: e.target.value })}
+                            />
+                        </div>
+
+                        <div>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-jp-gold text-sm font-bold uppercase tracking-wider">相簿 ({userData?.photos?.length || 0})</h3>
+                                <button 
+                                    onClick={() => fileInputRef.current.click()}
+                                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-white transition-colors border border-gray-700"
+                                >
+                                    <i className="fas fa-camera mr-2"></i>新增照片
+                                </button>
+                                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                                {userData?.photos?.map((photo, idx) => (
+                                    <div key={idx} className="aspect-square rounded-xl bg-gray-800 overflow-hidden relative group shadow-lg">
+                                        <img src={photo} className="w-full h-full object-cover" />
+                                        <button 
+                                            className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg"
+                                            onClick={() => {
+                                                const newPhotos = userData.photos.filter((_, i) => i !== idx);
+                                                onUpdateUserData(event.id, { ...userData, photos: newPhotos });
+                                            }}
+                                        >
+                                            <i className="fas fa-trash text-sm"></i>
+                                        </button>
+                                    </div>
+                                ))}
+                                {(!userData?.photos || userData.photos.length === 0) && (
+                                    <div className="col-span-2 py-8 text-center text-gray-600 border-2 border-dashed border-gray-800 rounded-xl">
+                                        尚無照片，點擊新增按鈕上傳
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Card = ({ event, userData, onOpenModal }) => {
+            const hasCover = userData?.photos && userData.photos.length > 0;
+            const coverImage = hasCover ? userData.photos[0] : null;
+
+            const styles = {
+                transport: { icon: 'fa-car', color: 'text-jp-indigo', border: 'border-jp-indigo' },
+                sight: { icon: 'fa-torii-gate', color: 'text-jp-red', border: 'border-jp-red' },
+                food: { icon: 'fa-utensils', color: 'text-jp-gold', border: 'border-jp-gold' },
+                stay: { icon: 'fa-bed', color: 'text-purple-400', border: 'border-purple-500' }
+            }[event.type] || { icon: 'fa-circle', color: 'text-gray-400', border: 'border-gray-500' };
+
+            const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.nav)}`;
+
+            return (
+                <div className="relative pl-4 pb-8 group">
+                    <div className="absolute left-[19px] top-8 bottom-0 w-0.5 bg-gray-800 group-last:hidden"></div>
+                    
+                    <div 
+                        onClick={onOpenModal}
+                        className={`relative rounded-xl overflow-hidden shadow-lg bg-jp-dark-gray active:scale-[0.98] transition-all duration-200 cursor-pointer border-l-4 ${styles.border}`}
+                    >
+                        {hasCover && (
+                            <div className="absolute inset-0 z-0">
+                                <img src={coverImage} className="w-full h-full object-cover opacity-60" />
+                                <div className="absolute inset-0 card-bg-gradient"></div>
+                            </div>
+                        )}
+
+                        <div className="relative z-10 p-4">
+                            <div className="flex items-start gap-3">
+                                <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-sm border border-white/10 shrink-0`}>
+                                    <i className={`fas ${styles.icon} ${hasCover ? 'text-white' : styles.color}`}></i>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-start">
+                                        <span className={`text-xs font-mono tracking-wide ${hasCover ? 'text-gray-200' : 'text-gray-400'}`}>{event.time}</span>
+                                        <a 
+                                            href={navUrl} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()} 
+                                            className="px-2 py-1 rounded bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 text-xs flex items-center gap-1 border border-blue-500/30"
+                                        >
+                                            <i className="fas fa-location-arrow text-[10px]"></i> 導航
+                                        </a>
+                                    </div>
+                                    <h3 className={`text-lg font-bold mb-1 truncate ${hasCover ? 'text-white shadow-black drop-shadow-md' : 'text-jp-light'}`}>{event.title}</h3>
+                                    <p className={`text-sm truncate ${hasCover ? 'text-gray-200' : 'text-gray-400'}`}>{event.desc}</p>
+                                    
+                                    {/* Highlight hidden in outer card, only in modal */}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {event.travelInfo && (
+                         <div className="absolute left-[38px] bottom-[2px] transform translate-y-1/2 z-0 pl-4 w-full">
+                            <div className="flex items-center gap-2">
+                                <div className="h-[1px] w-4 bg-gray-700 shrink-0"></div>
+                                <div className="flex items-center bg-gray-800 text-gray-300 px-2 py-1 rounded-full border border-gray-700 shadow-sm max-w-[85%]">
+                                    <i className="fas fa-car text-[10px] mr-2 text-gray-400 shrink-0"></i>
+                                    <span className="text-[10px] whitespace-nowrap font-mono overflow-hidden text-ellipsis">{event.travelInfo}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [selectedDayId, setSelectedDayId] = useState('day1');
+            const [userDataStore, setUserDataStore] = useState({});
+            const [modalData, setModalData] = useState(null);
+            const [activeTab, setActiveTab] = useState('itinerary');
+
+            useEffect(() => {
+                dbHelper.getAll().then(rows => {
+                    const map = {};
+                    if(rows) rows.forEach(row => map[row.id] = row);
+                    setUserDataStore(map);
+                });
+            }, []);
+
+            const handleUpdateUserData = (eventId, newData) => {
+                const updated = { ...userDataStore, [eventId]: newData };
+                setUserDataStore(updated);
+                dbHelper.save(eventId, newData);
+            };
+
+            const exportData = async () => {
+                const allData = await dbHelper.getAll();
+                const blob = new Blob([JSON.stringify(allData)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `JapanTrip2026_Backup_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+
+            const importData = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        await dbHelper.clear();
+                        for (const item of data) {
+                             if(item.id === 'budget' && !item.items && item.items !== []) continue; 
+                             await dbHelper.save(item.id, item);
+                        }
+                        alert('備份還原成功！請重新整理。');
+                        window.location.reload();
+                    } catch (err) {
+                        alert('還原失敗');
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            const currentDay = initialItinerary.find(d => d.id === selectedDayId);
+
+            return (
+                <div className="min-h-screen bg-[#121212] pb-20 relative font-sans">
+                    <div className="sticky top-0 z-40 bg-[#121212]/90 backdrop-blur-md border-b border-white/5 pt-env-top">
+                        <div className="px-4 py-3 flex justify-between items-center">
+                            <div>
+                                <h1 className="text-white font-bold tracking-widest text-lg">2026 關東自駕</h1>
+                                <p className="text-xs text-gray-400 flex items-center gap-1">
+                                    <i className="fas fa-map-marker-alt text-jp-red"></i> {currentDay.location.split(' ')[0]}
+                                </p>
+                            </div>
+                            {activeTab === 'itinerary' ? (
+                                <WeatherWidget coords={currentDay.coords} />
+                            ) : (
+                                <div className="flex gap-4 text-gray-400">
+                                    <label><i className="fas fa-file-import cursor-pointer"></i><input type="file" className="hidden" onChange={importData} /></label>
+                                    <button onClick={exportData}><i className="fas fa-save"></i></button>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {activeTab === 'itinerary' && (
+                            <div className="flex overflow-x-auto hide-scrollbar gap-2 px-4 pb-3">
+                                {initialItinerary.map(day => (
+                                    <button
+                                        key={day.id}
+                                        onClick={() => setSelectedDayId(day.id)}
+                                        className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm transition-all border ${
+                                            selectedDayId === day.id 
+                                            ? 'bg-jp-red text-white border-jp-red shadow-lg shadow-red-900/40' 
+                                            : 'bg-jp-dark text-gray-400 border-gray-700'
+                                        }`}
+                                    >
+                                        <span className="block text-[10px] opacity-70 mb-0.5">{day.date}</span>
+                                        <span className="font-bold">{day.dayLabel}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="p-4 pt-6">
+                         {activeTab === 'itinerary' ? (
+                            <div className="animation-fade-in pb-12">
+                                {currentDay.events.map(event => (
+                                    <Card 
+                                        key={event.id} 
+                                        event={event} 
+                                        userData={userDataStore[event.id]}
+                                        onOpenModal={() => setModalData(event)}
+                                    />
+                                ))}
+                            </div>
+                         ) : (
+                             <div className="space-y-6 pb-12">
+                                <InfoTool />
+                                <BudgetTool />
+                                <div className="text-center text-xs text-gray-600 mt-8">
+                                    <p>資料儲存於瀏覽器 IndexedDB</p>
+                                    <p>請定期點擊上方 <i className="fas fa-save"></i> 備份資料</p>
+                                </div>
+                             </div>
+                         )}
+                    </div>
+
+                    {modalData && (
+                        <CardModal 
+                            event={modalData}
+                            userData={userDataStore[modalData.id]}
+                            onClose={() => setModalData(null)}
+                            onUpdateUserData={handleUpdateUserData}
+                        />
+                    )}
+
+                    <div className="fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10 pb-[env(safe-area-inset-bottom)] z-50">
+                        <div className="flex justify-around items-center h-16">
+                            <button onClick={() => setActiveTab('itinerary')} className={`${activeTab === 'itinerary' ? 'text-jp-gold' : 'text-gray-500'} flex flex-col items-center w-full active:scale-95 transition-transform`}>
+                                <i className="fas fa-route text-xl mb-1"></i><span className="text-[10px]">行程</span>
+                            </button>
+                            <button onClick={() => setActiveTab('tools')} className={`${activeTab === 'tools' ? 'text-jp-gold' : 'text-gray-500'} flex flex-col items-center w-full active:scale-95 transition-transform`}>
+                                <i className="fas fa-toolbox text-xl mb-1"></i><span className="text-[10px]">工具</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
