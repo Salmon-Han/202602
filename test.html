@@ -115,6 +115,9 @@
         const { useState, useEffect, useRef, useMemo } = React;
 
         // --- Data ---
+        // 定義一個共用的 Trip ID，讓所有裝置讀取同一個位置
+        const SHARED_TRIP_ID = 'shared_kanto_2026';
+
         const INITIAL_ITINERARY = [
             {
                 id: 'day1', dayLabel: 'Day 1', date: '2/8 (日)', title: '啟程東京', location: '台北 -> 成田', 
@@ -456,8 +459,8 @@
         const subscribeToUserData = (callback) => {
             if (!window.auth || !window.auth.currentUser) return () => {};
             const { collection, onSnapshot } = window.firebaseModules;
-            const userId = window.auth.currentUser.uid;
-            const eventsRef = collection(window.db, `users/${userId}/events`);
+            // UPDATE: 使用共用路徑 trips/shared_kanto_2026/events，而非個人路徑
+            const eventsRef = collection(window.db, `trips/${SHARED_TRIP_ID}/events`);
             return onSnapshot(eventsRef, (snapshot) => {
                 const data = {};
                 snapshot.forEach((doc) => {
@@ -469,22 +472,24 @@
 
         const saveEventData = async (eventId, data) => {
             const { doc, setDoc } = window.firebaseModules;
-            const userId = await ensureAuth();
-            const docRef = doc(window.db, `users/${userId}/events`, eventId);
+            await ensureAuth(); // 確保有登入
+            // UPDATE: 寫入共用路徑
+            const docRef = doc(window.db, `trips/${SHARED_TRIP_ID}/events`, eventId);
             await setDoc(docRef, data, { merge: true });
         };
 
         // NEW: Upload to Firebase Storage
         const uploadPhotoToStorage = async (file) => {
             const { ref, uploadBytes, getDownloadURL } = window.firebaseModules;
-            const userId = await ensureAuth();
+            await ensureAuth();
             
             // 1. 壓縮圖片
             const blob = await compressImageToBlob(file);
             
-            // 2. 建立儲存路徑 (users/{uid}/{timestamp}.jpg)
+            // 2. 建立儲存路徑 (trips/shared_kanto_2026/{timestamp}.jpg)
+            // UPDATE: Storage 也改成共用路徑，方便管理
             const filename = `${Date.now()}.jpg`;
-            const storageRef = ref(window.storage, `users/${userId}/${filename}`);
+            const storageRef = ref(window.storage, `trips/${SHARED_TRIP_ID}/${filename}`);
             
             // 3. 上傳
             await uploadBytes(storageRef, blob);
@@ -497,8 +502,8 @@
         const subscribeToBudget = (callback) => {
             if (!window.auth || !window.auth.currentUser) return () => {};
             const { collection, onSnapshot } = window.firebaseModules;
-            const userId = window.auth.currentUser.uid;
-            const budgetRef = collection(window.db, `users/${userId}/budget`);
+            // UPDATE: 使用共用路徑
+            const budgetRef = collection(window.db, `trips/${SHARED_TRIP_ID}/budget`);
             return onSnapshot(budgetRef, (snapshot) => {
                 const items = [];
                 snapshot.forEach((doc) => {
@@ -510,15 +515,17 @@
 
         const addBudgetItem = async (item) => {
             const { doc, setDoc } = window.firebaseModules;
-            const userId = await ensureAuth();
-            const docRef = doc(window.db, `users/${userId}/budget`, item.id.toString());
+            await ensureAuth();
+            // UPDATE: 使用共用路徑
+            const docRef = doc(window.db, `trips/${SHARED_TRIP_ID}/budget`, item.id.toString());
             await setDoc(docRef, { desc: item.desc, cost: item.cost });
         };
 
         const deleteBudgetItem = async (itemId) => {
             const { doc, deleteDoc } = window.firebaseModules;
-            const userId = await ensureAuth();
-            const docRef = doc(window.db, `users/${userId}/budget`, itemId.toString());
+            await ensureAuth();
+            // UPDATE: 使用共用路徑
+            const docRef = doc(window.db, `trips/${SHARED_TRIP_ID}/budget`, itemId.toString());
             await deleteDoc(docRef);
         };
 
@@ -637,7 +644,7 @@
             return (
                 <div className="bg-jp-dark p-4 rounded-xl shadow-lg card-shadow animation-fade-in border border-white/5">
                     <h3 className="text-jp-gold font-bold mb-4 flex items-center justify-between">
-                        <span><i className="fas fa-wallet mr-2"></i>旅費記帳 (雲端)</span>
+                        <span><i className="fas fa-wallet mr-2"></i>旅費記帳 (雲端共用)</span>
                         <span className="text-2xl font-mono">¥{total.toLocaleString()}</span>
                     </h3>
                     <div className="flex gap-2 mb-4">
@@ -686,7 +693,7 @@
                 if (!file) return;
                 setIsUploading(true);
                 try {
-                    // NEW: Upload to Storage first, then save URL
+                    // Upload to Storage
                     const photoUrl = await uploadPhotoToStorage(file);
                     
                     const currentPhotos = userData?.photos || [];
@@ -697,8 +704,8 @@
                     // Catch storage bucket missing error
                     if (error.code === 'storage/object-not-found' || error.message.includes('bucket')) {
                          alert("上傳失敗：請檢查 Firebase Console 是否已開啟 Storage 功能。\n(錯誤代碼: bucket-error)");
-                    } else if (error.code === 'storage/unauthorized') {
-                         alert("上傳失敗：權限不足。請檢查 Storage Rules 是否允許讀寫 (allow read, write)。");
+                    } else if (error.code === 'storage/unauthorized' || error.code === 'permission-denied') {
+                         alert("上傳失敗：權限不足。請到 Firebase Console 更新 Rules，允許 trips/ 路徑的讀寫。");
                     } else {
                          alert("照片上傳失敗，請稍後再試。");
                     }
@@ -767,7 +774,7 @@
                             <h3 className="text-jp-gold text-sm font-bold uppercase tracking-wider mb-2">我的備註</h3>
                             <textarea 
                                 className="w-full bg-gray-800 text-white p-4 rounded-xl border border-gray-700 focus:border-jp-gold min-h-[120px] text-base"
-                                placeholder="寫下旅行心情或備忘錄 (自動儲存)..."
+                                placeholder="寫下旅行心情或備忘錄 (全體成員可見)..."
                                 defaultValue={userData?.notes || ''}
                                 onBlur={(e) => handleNoteChange(e.target.value)}
                             />
@@ -884,7 +891,6 @@
                 const initAuthAndSync = async () => {
                      try {
                         if (!window.db) {
-                            // Wait a bit for Firebase to init
                             await new Promise(r => setTimeout(r, 1000));
                             if (!window.db) throw new Error("Firebase not initialized in window");
                         }
@@ -903,6 +909,12 @@
                                 title: "尚未啟用匿名登入",
                                 message: "Firebase Authentication 的「匿名登入」功能尚未開啟。",
                                 code: 'AUTH_CONFIG'
+                             });
+                         } else if (e.code === 'permission-denied') {
+                             setError({
+                                title: "權限不足",
+                                message: "請檢查 Firestore Rules 是否已允許 'trips' 資料夾的讀寫權限。",
+                                code: 'PERMISSION'
                              });
                          } else {
                              setError({
@@ -924,15 +936,15 @@
                         <h2 className="text-xl font-bold mb-2 text-white">{error.title}</h2>
                         <p className="text-gray-400 mb-6 max-w-md leading-relaxed text-sm whitespace-pre-line">{error.message}</p>
                         
-                        {error.code === 'AUTH_CONFIG' && (
+                        {error.code === 'PERMISSION' && (
                              <div className="bg-gray-800 p-6 rounded-xl text-left text-sm text-gray-300 w-full max-w-md border-l-4 border-jp-gold shadow-xl my-4">
                                 <h3 className="font-bold text-white mb-3 text-base flex items-center"><i className="fas fa-wrench mr-2 text-jp-gold"></i>如何修復？</h3>
-                                <ol className="list-decimal pl-5 space-y-2">
-                                    <li>前往 <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-blue-400 underline hover:text-blue-300">Firebase Console</a></li>
-                                    <li>進入專案 <b>japantripapp-ff22f</b></li>
-                                    <li>點擊左側 <b>Build</b> &gt; <b>Authentication</b></li>
-                                    <li>Sign-in method -> 開啟 <b>Anonymous</b></li>
-                                </ol>
+                                <p className="mb-2">資料庫位置已更改為共用群組，請更新 Firestore Rules：</p>
+                                <pre className="bg-black/50 p-2 rounded text-xs font-mono text-green-400 overflow-x-auto">
+match /trips/{'{'}tripId{'}'}/{'{'}document=**{'}'} {'{'} <br/>
+&nbsp;&nbsp;allow read, write: if request.auth != null; <br/>
+{'}'}
+                                </pre>
                             </div>
                         )}
 
@@ -997,8 +1009,8 @@
                                 <InfoTool />
                                 <BudgetTool />
                                 <div className="text-center text-xs text-gray-600 mt-8">
-                                    <p>資料同步至 Firebase Firestore</p>
-                                    <p>照片儲存於 Firebase Storage</p>
+                                    <p>資料同步至 Firebase Firestore (共用群組)</p>
+                                    <p>照片儲存於 Firebase Storage (共用群組)</p>
                                 </div>
                              </div>
                          )}
