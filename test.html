@@ -1,202 +1,74 @@
-import React, { useState, useEffect } from 'react';
-import { INITIAL_ITINERARY } from './constants';
-import { EventItem, UserData } from './types';
-import { subscribeToUserData, ensureAuth } from './services/firestoreService';
-import { WeatherWidget } from './components/WeatherWidget';
-import { Card } from './components/Card';
-import { CardModal } from './components/CardModal';
-import { InfoTool } from './components/InfoTool';
-import { BudgetTool } from './components/BudgetTool';
-
-const App: React.FC = () => {
-    const [selectedDayId, setSelectedDayId] = useState('day1');
-    const [userDataStore, setUserDataStore] = useState<Record<string, UserData>>({});
-    const [modalData, setModalData] = useState<EventItem | null>(null);
-    const [activeTab, setActiveTab] = useState<'itinerary' | 'tools'>('itinerary');
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<{title: string, message: string, code?: string} | null>(null);
-
-    useEffect(() => {
-        const initAuthAndSync = async () => {
-             try {
-                // 1. Ensure user is logged in anonymously
-                await ensureAuth();
-                
-                // 2. Subscribe to Firestore updates
-                const unsubscribe = subscribeToUserData((data) => {
-                    setUserDataStore(data);
-                    setIsLoading(false);
-                });
-                return unsubscribe;
-             } catch (e: any) {
-                 console.error("Auth/Sync failed", e);
-                 setIsLoading(false);
-                 
-                 // Handle specific Firebase errors
-                 if (e.code === 'auth/configuration-not-found' || e.code === 'auth/admin-restricted-operation' || e.code === 'auth/operation-not-allowed') {
-                     setError({
-                        title: "尚未啟用匿名登入",
-                        message: "Firebase Authentication 的「匿名登入」功能尚未開啟，導致 App 無法存取資料庫。",
-                        code: 'AUTH_CONFIG'
-                     });
-                 } else if (e.message && (e.message.includes('api-key-not-valid') || e.code === 'auth/api-key-not-valid')) {
-                     setError({
-                        title: "API Key 無效",
-                        message: "請開啟 `firebase.ts` 檔案並填入您正確的 Firebase 專案設定 (firebaseConfig)。",
-                        code: 'API_KEY'
-                     });
-                 } else {
-                     setError({
-                        title: "資料庫連線錯誤",
-                        message: e.message || "未知錯誤",
-                     });
-                 }
-             }
-        };
-
-        const cleanupPromise = initAuthAndSync();
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2026 關東自駕遊 App</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'jp-black': '#121212',
+                        'jp-dark': '#1e1e1e',
+                        'jp-gray': '#2c2c2c',
+                        'jp-light': '#e5e5e5',
+                        'jp-red': '#b91c1c', 
+                        'jp-gold': '#c5a059',
+                        'jp-indigo': '#312e81',
+                        'jp-accent': '#d4af37',
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    },
+                    animation: {
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                    },
+                    keyframes: {
+                        slideUp: {
+                            '0%': { transform: 'translateY(100%)' },
+                            '100%': { transform: 'translateY(0)' },
+                        },
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #121212; color: #e5e5e5; -webkit-tap-highlight-color: transparent; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass-panel { background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .card-bg-gradient { background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%); }
+        .pt-env-top { padding-top: env(safe-area-inset-top, 20px); }
+        .pb-env-bottom { padding-bottom: env(safe-area-inset-bottom, 20px); }
         
-        // This is a simplified cleanup handling for the async effect
-        return () => {
-            cleanupPromise.then(unsub => unsub && unsub());
-        };
-    }, []);
-
-    // Error Screen
-    if (error) {
-        return (
-            <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-8 text-center text-white font-sans">
-                <div className="w-16 h-16 rounded-full bg-red-900/50 flex items-center justify-center mb-4 text-red-400 text-3xl border border-red-500/30">
-                    <i className="fas fa-exclamation-triangle"></i>
-                </div>
-                <h2 className="text-xl font-bold mb-2 text-white">{error.title}</h2>
-                <p className="text-gray-400 mb-6 max-w-md leading-relaxed text-sm whitespace-pre-line">{error.message}</p>
-                
-                {error.code === 'API_KEY' && (
-                    <div className="bg-gray-900 p-6 rounded-xl text-left text-xs font-mono text-gray-300 w-full max-w-md overflow-x-auto border border-gray-700 shadow-xl relative">
-                        <div className="absolute top-2 right-3 text-gray-600 text-[10px] uppercase tracking-wider">firebase.ts</div>
-                        <p className="text-gray-500 mb-2">// 請替換為您的真實設定</p>
-                        <p><span className="text-purple-400">const</span> firebaseConfig = {'{'}</p>
-                        <p className="pl-4">apiKey: <span className="text-green-400">"AIzaSy..."</span>,</p>
-                        <p className="pl-4">authDomain: <span className="text-green-400">"your-app.firebaseapp.com"</span>,</p>
-                        <p className="pl-4">projectId: <span className="text-green-400">"your-project-id"</span>,</p>
-                        <p className="pl-4 text-gray-500">...</p>
-                        <p>{'};'}</p>
-                    </div>
-                )}
-
-                {error.code === 'AUTH_CONFIG' && (
-                    <div className="bg-gray-800 p-6 rounded-xl text-left text-sm text-gray-300 w-full max-w-md border-l-4 border-jp-gold shadow-xl my-4">
-                        <h3 className="font-bold text-white mb-3 text-base flex items-center"><i className="fas fa-wrench mr-2 text-jp-gold"></i>如何修復？</h3>
-                        <ol className="list-decimal pl-5 space-y-2">
-                            <li>前往 <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-blue-400 underline hover:text-blue-300">Firebase Console</a></li>
-                            <li>進入專案 <b>japantripapp-ff22f</b></li>
-                            <li>點擊左側 <b>Build</b> &gt; <b>Authentication</b></li>
-                            <li>點擊 <b>Get started</b> (如尚未啟用)</li>
-                            <li>切換到 <b>Sign-in method</b> 分頁</li>
-                            <li>點擊 <b>Anonymous</b> (匿名)</li>
-                            <li>將開關切換為 <b>Enable</b> 並儲存</li>
-                        </ol>
-                    </div>
-                )}
-
-                <button 
-                    onClick={() => window.location.reload()}
-                    className="mt-8 px-6 py-3 bg-jp-gold text-black font-bold rounded-lg hover:bg-yellow-500 transition-colors shadow-lg shadow-yellow-900/20 active:scale-95"
-                >
-                    <i className="fas fa-sync-alt mr-2"></i>重試
-                </button>
-            </div>
-        );
-    }
-
-    const currentDay = INITIAL_ITINERARY.find(d => d.id === selectedDayId);
-    if (!currentDay) return null;
-
-    return (
-        <div className="min-h-screen bg-[#121212] pb-20 relative font-sans text-jp-light">
-            {/* Header */}
-            <div className="sticky top-0 z-40 bg-[#121212]/90 backdrop-blur-md border-b border-white/5 pt-env-top">
-                <div className="px-4 py-3 flex justify-between items-center">
-                    <div>
-                        <h1 className="text-white font-bold tracking-widest text-lg">2026 關東自駕</h1>
-                        <p className="text-xs text-gray-400 flex items-center gap-1">
-                            <i className="fas fa-map-marker-alt text-jp-red"></i> {currentDay.location.split(' ')[0]}
-                            {isLoading && <span className="ml-2 spinner w-3 h-3"></span>}
-                        </p>
-                    </div>
-                    {activeTab === 'itinerary' && (
-                        <WeatherWidget coords={currentDay.coords} />
-                    )}
-                </div>
-                
-                {activeTab === 'itinerary' && (
-                    <div className="flex overflow-x-auto hide-scrollbar gap-2 px-4 pb-3">
-                        {INITIAL_ITINERARY.map(day => (
-                            <button
-                                key={day.id}
-                                onClick={() => setSelectedDayId(day.id)}
-                                className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm transition-all border ${
-                                    selectedDayId === day.id 
-                                    ? 'bg-jp-red text-white border-jp-red shadow-lg shadow-red-900/40' 
-                                    : 'bg-jp-dark text-gray-400 border-gray-700'
-                                }`}
-                            >
-                                <span className="block text-[10px] opacity-70 mb-0.5">{day.date}</span>
-                                <span className="font-bold">{day.dayLabel}</span>
-                            </button>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {/* Main Content */}
-            <div className="p-4 pt-6">
-                 {activeTab === 'itinerary' ? (
-                    <div className="animation-fade-in pb-12">
-                        {currentDay.events.map(event => (
-                            <Card 
-                                key={event.id} 
-                                event={event} 
-                                userData={userDataStore[event.id]}
-                                onOpenModal={() => setModalData(event)}
-                            />
-                        ))}
-                    </div>
-                 ) : (
-                     <div className="space-y-6 pb-12">
-                        <InfoTool />
-                        <BudgetTool />
-                        <div className="text-center text-xs text-gray-600 mt-8">
-                            <p>資料同步至 Firebase Firestore</p>
-                            <p>所有資料皆綁定此裝置 (匿名登入)</p>
-                        </div>
-                     </div>
-                 )}
-            </div>
-
-            {/* Detail Modal */}
-            {modalData && (
-                <CardModal 
-                    event={modalData}
-                    userData={userDataStore[modalData.id]}
-                    onClose={() => setModalData(null)}
-                />
-            )}
-
-            {/* Bottom Nav */}
-            <div className="fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10 pb-env-bottom z-50">
-                <div className="flex justify-around items-center h-16">
-                    <button onClick={() => setActiveTab('itinerary')} className={`${activeTab === 'itinerary' ? 'text-jp-gold' : 'text-gray-500'} flex flex-col items-center w-full active:scale-95 transition-transform`}>
-                        <i className="fas fa-route text-xl mb-1"></i><span className="text-[10px]">行程</span>
-                    </button>
-                    <button onClick={() => setActiveTab('tools')} className={`${activeTab === 'tools' ? 'text-jp-gold' : 'text-gray-500'} flex flex-col items-center w-full active:scale-95 transition-transform`}>
-                        <i className="fas fa-toolbox text-xl mb-1"></i><span className="text-[10px]">工具</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-export default App;
+        /* Loading Spinner */
+        .spinner { border: 3px solid rgba(255,255,255,0.1); border-left-color: #c5a059; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+  }
+}
+</script>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>
