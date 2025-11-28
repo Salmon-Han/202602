@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -55,48 +56,76 @@
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .glass-panel { background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
         .card-bg-gradient { background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%); }
-        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
-        
-        /* Loading Spinner */
+        .pt-env-top { padding-top: env(safe-area-inset-top, 20px); }
+        .pb-env-bottom { padding-bottom: env(safe-area-inset-bottom, 20px); }
         .spinner { border: 3px solid rgba(255,255,255,0.1); border-left-color: #c5a059; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Line Clamp for Card Descriptions */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
     </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/"
+  }
+}
+</script>
 </head>
 <body>
     <div id="root"></div>
 
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+
+        // 您的設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyBjTfFaJfN6Vbv3_PjykOS5IjEwewtKNk4",
+            authDomain: "japantripapp-ff22f.firebaseapp.com",
+            projectId: "japantripapp-ff22f",
+            storageBucket: "japantripapp-ff22f.firebasestorage.app",
+            messagingSenderId: "865746692066",
+            appId: "1:865746692066:web:f853fde276f0940785fbbb"
+        };
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            
+            // 將功能掛載到 window 供 React 使用
+            window.db = getFirestore(app);
+            window.auth = getAuth(app);
+            window.storage = getStorage(app);
+            
+            window.firebaseModules = { 
+                signInAnonymously, collection, doc, setDoc, deleteDoc, onSnapshot,
+                ref, uploadBytes, getDownloadURL, deleteObject 
+            };
+            console.log("Firebase & Storage initialized successfully");
+        } catch (e) {
+            console.error("Firebase init error:", e);
+        }
+    </script>
+
+    <!-- React Application Logic -->
     <script type="text/babel">
         const { useState, useEffect, useRef, useMemo } = React;
 
-        // --- Weather API Helper ---
-        const fetchWeather = async (lat, lon) => {
-            try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=Asia%2FTokyo`);
-                const data = await res.json();
-                return data.current_weather;
-            } catch (e) {
-                console.error("Weather fetch failed", e);
-                return null;
-            }
-        };
-
-        const weatherCodes = {
-            0: { label: '晴朗', icon: 'fa-sun', color: 'text-orange-400' },
-            1: { label: '多雲', icon: 'fa-cloud-sun', color: 'text-yellow-200' },
-            2: { label: '陰天', icon: 'fa-cloud', color: 'text-gray-400' },
-            3: { label: '陰天', icon: 'fa-cloud', color: 'text-gray-400' },
-            45: { label: '霧', icon: 'fa-smog', color: 'text-gray-300' },
-            48: { label: '霧淞', icon: 'fa-snowflake', color: 'text-white' },
-            51: { label: '細雨', icon: 'fa-cloud-rain', color: 'text-blue-300' },
-            61: { label: '下雨', icon: 'fa-umbrella', color: 'text-blue-400' },
-            71: { label: '下雪', icon: 'fa-snowflake', color: 'text-white' },
-            80: { label: '陣雨', icon: 'fa-cloud-showers-heavy', color: 'text-blue-500' },
-            95: { label: '雷雨', icon: 'fa-bolt', color: 'text-yellow-400' },
-        };
-
         // --- Data ---
-        // RICH DESCRIPTIONS ADDED
-        const initialItinerary = [
+        // 定義一個共用的 Trip ID，讓所有裝置讀取同一個位置
+        const SHARED_TRIP_ID = 'shared_kanto_2026';
+
+        const INITIAL_ITINERARY = [
             {
                 id: 'day1', dayLabel: 'Day 1', date: '2/8 (日)', title: '啟程東京', location: '台北 -> 成田', 
                 coords: { lat: 35.7719, lon: 140.3929 }, // Narita
@@ -104,7 +133,7 @@
                     { id: 'd1-1', type: 'transport', time: '12:50', title: '捷星航空 GK14', desc: '台北(TPE) T1 -> 東京(NRT) T3。', nav: 'Narita International Airport Terminal 3', highlight: '行李：手提7kg / 託運30kg+20kg', travelInfo: '機場接駁 | 30分' },
                     { 
                         id: 'd1-2', type: 'stay', time: '18:00', title: '東橫INN 成田機場 本館', 
-                        desc: '作為日本最大規模的東橫INN，本館擁有數千間客房，是許多紅眼班機或自駕旅客的首選中繼站。對於租車旅客而言，這裡擁有超大型的平面與立體停車場，停車極為便利。飯店提供免費的接駁巴士往返成田機場各航廈，班次密集。雖然房間維持東橫INN一貫的標準配置，簡單乾淨，但大廳設有寬敞的自動報到機與 Lawson 便利商店，非常方便。早餐提供簡單的日式飯糰與味噌湯，讓您在出發取車前能先墊墊胃。', 
+                        desc: '作為抵達日本後的第一站，這裡擁有極佳的後勤優勢。飯店規模巨大，提供極為密集的免費接駁巴士往返成田機場（約15分鐘），對於租車前後的緩衝非常方便。雖然房間是標準的商務配置，但乾淨整潔。大廳設有自動報到機與寬敞的休息區，並有Lawson便利商店，方便深夜抵達補充物資。這裡的自助早餐品項在東橫INN體系中算豐富，能讓您在出發取車前吃飽喝足。', 
                         nav: 'Toyoko Inn Narita Airport Honkan', highlight: '已預訂 (早餐/停車付費)', subInfo: '¥11,495 (現場付)' 
                     }
                 ]
@@ -117,27 +146,27 @@
                     { id: 'd2-1', type: 'transport', time: '09:00', title: '租車取車', desc: 'Toyota Rent a Car 成田機場店。Sienta HEV。', nav: 'Toyota Rent a Car Narita Airport', highlight: '預約番號：99758887600', subInfo: '費用：¥108,900', travelInfo: '85km | 2小時' },
                     { 
                         id: 'd2-2', type: 'sight', time: '10:30', title: '袋田瀑布', 
-                        desc: '名列「日本三大名瀑」之一，高 120 公尺、寬 73 公尺，水流分四段落下，因此又被稱為「四度之瀧」。冬季（1月至2月）是這裡最神祕的季節，極寒時瀑布會結凍形成壯觀的「冰瀑」奇景，潔白的冰壁掛在岩壁上，展現出大自然靜謐而震撼的力量。您可以穿越隧道，搭乘電梯前往高處的觀景台，近距離欣賞這凍結的時間美學。周邊還有著名的「鮎魚鹽燒」與糰子，是賞景後必吃的美味點心。', 
+                        desc: '日本三大名瀑之一，高120公尺、寬73公尺，水流沿著四段岩壁傾瀉而下，因此又被稱為「四度之瀧」。冬季是這裡最獨特的季節，嚴寒時瀑布會結凍成雪白的冰壁，形成極為壯觀的「冰瀑」奇景，若運氣好遇到完全結凍，景色更是令人屏息。遊客需通過隧道前往觀瀑台，第一觀瀑台可近距離感受水氣（或冰氣），搭乘電梯至第二觀瀑台則能俯瞰全景。周邊有著名的奥久慈軍雞料理與蘋果派，是自駕旅客補充體力的好去處。', 
                         nav: 'Fukuroda Falls', highlight: '建議停留1小時', travelInfo: '45km | 1小時' 
                     },
                     { 
                         id: 'd2-3', type: 'food', time: '12:45', title: '午餐：鮟鱇魚鍋', 
-                        desc: '茨城縣冬季最具代表性的極品美食，有「東之鮟鱇，西之河豚」的美譽。鮟鱇魚雖然外表其貌不揚，但全身除了骨頭以外皆可食用。冬季是鮟鱇魚肝（Ankimo）最肥美的季節，被稱為「海中的鵝肝」。道地的鮟鱇魚鍋通常以味噌為基底，將魚肝融入湯頭中，煮出濃郁橘黃色的精華高湯，口感醇厚鮮美，搭配富有膠原蛋白的魚皮與鮮嫩魚肉，在寒冷的冬天吃上一鍋，全身都會暖和起來。', 
+                        desc: '茨城縣冬季最具代表性的極品美食。道地的鮟鱇魚鍋通常以味噌為基底，將魚肝融入湯頭中，煮出濃郁橘黃色的精華高湯。', 
                         nav: 'Sansui Mito', highlight: '必吃：鮟鱇魚肝味噌湯底', travelInfo: '市區 | 15分' 
                     },
                     { 
                         id: 'd2-4', type: 'sight', time: '14:30', title: '偕樂園 賞梅', 
-                        desc: '與金澤兼六園、岡山後樂園並列為「日本三大名園」。這裡最著名的就是梅花，園內種植了約 100 品種、3000 棵梅樹。您造訪的 2 月中旬至下旬，正值「水戶梅花祭」的舉辦期間，是偕樂園一年中最美的時刻。不同於櫻花的燦爛，梅花帶有高雅的香氣與孤傲的美感。自駕前往方便，園區廣大，您可以漫步在紅白相間的梅林隧道中，從好文亭俯瞰千波湖的冬日景致，感受江戶時代文人雅士的情懷。', 
+                        desc: '與金澤兼六園、岡山後樂園並列為「日本三大名園」。偕樂園以梅花聞名，園內種植了約100種、3000株梅花。若您於2月至3月造訪，正值「水戶梅花祭」，早開的梅花在雪景或寒空中綻放，香氣襲人。園內的「好文亭」是德川齊昭公親自設計的木造建築，登樓可遠眺千波湖的優美風光。這裡地形平緩，不僅適合散步，其陰陽對比的造園美學（孟宗竹林的「陰」與梅林的「陽」）更充滿了江戶時代的文人雅趣。', 
                         nav: 'Kairakuen', highlight: '可參觀好文亭', travelInfo: '市區 | 10分' 
                     },
                     { 
                         id: 'd2-5', type: 'stay', time: '17:00', title: 'Dormy Inn 水戶', 
-                        desc: '位於水戶市中心的連鎖商務飯店，Dormy Inn 系列最大的特色就是擁有天然溫泉大浴場。水戶館的頂樓設有露天風呂，讓您在一天疲憊的駕駛後，能泡在熱湯中仰望星空，徹底放鬆肌肉。此外，飯店每晚提供免費的「夜鳴拉麵（醤油拉麵）」作為宵夜，是許多旅客最期待的暖心服務。早餐自助吧通常會提供當地的特色料理，如納豆料理或梅子相關配菜，讓您一早就充滿活力。', 
+                        desc: 'Dormy Inn 系列的最大賣點在於「天然溫泉」與「夜鳴拉麵」。位於水戶市中心的這間分館，頂樓設有露天溫泉「香梅之湯」，能一邊泡湯一邊眺望水戶市區夜景，消除駕駛疲勞。泡完湯後，飯店提供免費的宵夜醬油拉麵（夜鳴きそば），簡單卻暖胃。早餐通常會提供茨城名產「納豆」與當地鄉土料理（如鮟鱇魚料理等，視季節而定），走路即可抵達餐廳林立的繁華街，地理位置優越。', 
                         nav: 'Dormy Inn Mito', highlight: '設施：大浴場/桑拿', travelInfo: '步行/短程' 
                     },
                     { 
                         id: 'd2-6', type: 'food', time: '18:30', title: '晚餐：常陸牛', 
-                        desc: '茨城縣引以為傲的頂級黑毛和牛品牌，唯有通過嚴格標準的牛隻才能被冠上「常陸牛」的稱號。其特徵是如大理石般細緻分佈的霜降油花，肉質軟嫩，入口即化。常陸牛的脂肪熔點低，吃起來甘甜而不油膩。推薦以壽喜燒、燒肉或牛排的方式品嚐。在水戶市區有許多專賣店，雖然價格稍高，但其細膩的口感與豐富的肉汁絕對物超所值，是犒賞自駕辛勞的最佳選擇。', 
+                        desc: '茨城縣引以為傲的頂級黑毛和牛品牌。其特徵是如大理石般細緻分佈的霜降油花，肉質軟嫩，入口即化。', 
                         nav: 'Restaurant Iijima', highlight: '必吃：牛排/壽喜燒' 
                     }
                 ]
@@ -149,215 +178,239 @@
                     { id: 'd3-0', type: 'stay', time: '08:30', title: '出發：Dormy Inn 水戶', desc: '辦理退房。', nav: 'Dormy Inn Mito', highlight: '早餐後出發', travelInfo: '50km | 50分' },
                     { 
                         id: 'd3-1', type: 'sight', time: '09:20', title: '常陸國出雲大社', 
-                        desc: '位於笠間市，是島根縣出雲大社的分社，主祀大國主大神，以祈求結緣聞名。這裡最震撼的視覺焦點是拜殿上掛著的巨大「注連繩」，重達 6 噸，氣勢非凡，據說是日本最大級別之一。透過注連繩向神明投擲硬幣若能卡住，傳說願望就會實現。境內還有一座現代藝術風格的玻璃工坊與餐廳，氛圍莊嚴又不失現代感，是求姻緣與好運的熱門景點。', 
+                        desc: '位於笠間市，雖然是島根縣出雲大社的分社，但其規模與氣勢毫不遜色。最著名的地標是拜殿上掛著的巨大注連繩，重達6噸，魄力十足，許多遊客會在此嘗試將硬幣投向注連繩底部以求好運。這裡主祭大國主大神，是著名的「結緣」聖地，不僅祈求姻緣，也包含工作與人際關係的緣分。神社境內還設有玻璃工坊與現代藝術展館，氛圍比一般神社更具開放感與現代感，從高處眺望的茨城鄉野景色也十分遼闊。', 
                         nav: 'Hitachinokuni Izumo Taisha', highlight: '參拜時間約40-60分', travelInfo: '90km | 1.5小時' 
                     },
                     { id: 'd3-2', type: 'food', time: '12:20', title: '午餐：日光湯波料理', desc: '日光名物豆皮料理。推薦：和風餐廳 Yubazen。', nav: 'Yubazen Nikko', highlight: '豆皮料理', travelInfo: '短程 | 10分' },
                     { 
                         id: 'd3-3', type: 'sight', time: '13:30', title: '日光東照宮', 
-                        desc: '世界文化遺產，供奉江戶幕府初代將軍德川家康的神社。這裡以極致奢華、金碧輝煌的「陽明門」聞名於世，集結了當時全日本最頂尖的工匠技藝。著名的「三猿」（非禮勿視、非禮勿聽、非禮勿言）與「眠貓」木雕更是必看重點。冬季造訪時，雪花落在金色的屋簷與五重塔上，黑金白三色交織出莊嚴肅穆的美感。請預留 2-3 小時參觀，細細品味這座集結了日本近世權力與藝術巔峰的建築群。', 
+                        desc: '世界文化遺產，也是供奉江戶幕府初代將軍德川家康的神社。建築群金碧輝煌，運用了超過5000尊雕刻，展現了江戶初期工藝的巔峰。最知名的包括祈求和平的「眠貓」以及寓意非禮勿視、非禮勿言、非禮勿聽的「三猿」。核心建築「陽明門」被譽為「日暮之門」，意指其精美程度讓人看上一整天也不會厭倦。冬季的東照宮雖然寒冷，但白雪覆蓋在金色的屋簷與色彩鮮豔的雕刻上，形成莊嚴肅穆的對比美感，是攝影愛好者的絕佳素材。', 
                         nav: 'Nikko Toshogu', highlight: '必看：三猿、眠貓、陽明門', travelInfo: '15km | 40分 (山路)' 
                     },
                     { 
                         id: 'd3-4', type: 'sight', time: '15:40', title: '華嚴瀑布 & 中禪寺湖', 
-                        desc: '位於日光國立公園，是中禪寺湖的湖水流出所形成的壯麗瀑布，落差高達 97 公尺，名列「日本三大名瀑」之一。您可以搭乘專用電梯下降到瀑布底部的觀景台，近距離感受水流轟隆落下的震撼聲響與水氣。冬季時，瀑布周圍的小瀑布會結成藍白色的冰柱，主瀑布的水量雖會減少，但更顯得孤高冷冽。運氣好的話，還能看到冰雪與彩虹交織的夢幻景色，是日光冬天不可錯過的絕景。', 
+                        desc: '華嚴瀑布是男體山噴發後截斷河流形成的壯麗景觀，落差高達97公尺，名列日本三大名瀑。搭乘專用電梯下降至觀瀑台，能感受到水聲如雷的震撼力。冬季時，瀑布周圍的細小水流會結成數不清的藍色冰柱（十二瀑），極具神祕感。緊鄰的中禪寺湖是日本海拔最高的天然湖泊（約1269公尺），湖水清澈湛藍。冬季湖畔風勢強勁且寒冷，但空氣極度通透，能清楚看見男體山的倒影。此處道路（伊路波坂）多彎，自駕需特別注意路面凍結。', 
                         nav: 'Kegon Falls', highlight: '電梯16:30關閉', travelInfo: '50km | 1小時' 
                     },
                     { 
                         id: 'd3-5', type: 'stay', time: '17:30', title: '東橫INN 宇都宮站前', 
-                        desc: '地理位置極佳，就位於 JR 宇都宮車站西口步行範圍內，周邊百貨公司、餐廳林立，生活機能非常完善。對於想品嚐宇都宮餃子的旅客來說，這裡簡直是天堂，因為著名的餃子街就在附近，您可以輕鬆步行去名店（如 Min Min 或 Masashi）排隊，吃完再慢慢散步回飯店。作為自駕的中繼站，這裡交通四通八達，飯店提供機械式停車塔，若滿車也會引導至周邊特約停車場，相當便利。', 
+                        desc: '位於「餃子之都」宇都宮的核心地帶，距離JR宇都宮站步行僅需極短時間。飯店維持東橫INN一貫的穩定品質與明亮清潔感。選擇這裡的最大優勢是周邊美食機能強大，車站周邊匯集了像是「Minmin」、「正嗣」等多家知名的宇都宮餃子名店，晚餐可以輕鬆安排一場餃子巡禮。對於自駕者來說，這裡提供機械式停車塔（需注意車高限制）或特約停車場，作為前往日光或北上的中繼站非常合適。', 
                         nav: 'Toyoko Inn Utsunomiya-eki Mae 1', highlight: '', travelInfo: '步行' 
                     },
                     { 
                         id: 'd3-6', type: 'food', time: '18:30', title: '晚餐：宇都宮餃子', 
-                        desc: '宇都宮市被稱為「餃子之都」，市內擁有超過 200 家餃子專賣店。這裡的餃子特色是蔬菜比例較高（如大白菜、高麗菜、韭菜），內餡多汁且口感清爽，即使多吃幾顆也不覺得油膩。常見的吃法有燒餃子、水餃子與揚餃子。建議您可以去「來らっせ (Kirasse)」這樣的餃子主題館，這裡集合了多家名店的餃子，讓您一次就能品嚐並比較不同店家的獨門風味。', 
+                        desc: '宇都宮市被稱為「餃子之都」，市內擁有超過 200 家餃子專賣店。', 
                         nav: 'Kirasse Honten', highlight: '餃子之都巡禮' 
                     }
                 ]
             },
             {
-                id: 'day4', dayLabel: 'Day 4', date: '2/11 (三)', title: '雪國南魚沼', location: '宇都宮 -> 新潟',
-                coords: { lat: 37.0645, lon: 138.8785 }, // Minamiuonuma
+                id: 'day4', dayLabel: 'Day 4', date: '2/11 (三)', title: '足利古城與雪國', location: '宇都宮 -> 南魚沼',
+                coords: { lat: 37.0645, lon: 138.8785 },
                 events: [
-                    { id: 'd4-0', type: 'stay', time: '09:00', title: '出發：東橫INN 宇都宮', desc: '睡飽出發。', nav: 'Toyoko Inn Utsunomiya-eki Mae 1', highlight: '', travelInfo: '60km | 50分' },
+                    { id: 'd4-0', type: 'stay', time: '09:00', title: '出發：東橫INN 宇都宮', desc: '睡飽出發，經北關東道前往足利。', nav: 'Toyoko Inn Utsunomiya-eki Mae 1', highlight: '', travelInfo: '55km | 50分' },
                     { 
-                        id: 'd4-1', type: 'sight', time: '10:30', title: '少林山達摩寺', 
-                        desc: '位於群馬縣高崎市，是日本象徵吉祥的「達摩不倒翁」的發源地。寺廟依山而建，境內堆滿了成千上萬個被參拜者供奉的達摩，紅通通的一片視覺效果非常驚人。您可以在此求一個達摩，許願時畫上左眼，願望實現後再畫上右眼並帶回來還願。冬季造訪時，紅色的達摩與白雪形成強烈對比，是非常適合拍照並祈求旅途平安與新年好運的靈氣景點。', 
-                        nav: 'Shorinzan Darumaji', highlight: '購買達摩許願', travelInfo: '市區 | 20分' 
+                        id: 'd4-1', type: 'sight', time: '10:00', title: '足利氏館 (鑁阿寺)', 
+                        desc: '位於足利市中心，是室町幕府將軍足利氏的發源地。鑁阿寺（Bannaji）原是足利氏的居館，後來改建為寺院，因此保留了護城河與土壘等防禦工事，呈現獨特的「寺城並存」樣貌。本堂已被指定為日本國寶，建築風格古樸厚重，充滿武家文化的剛健氣息。境內有一棵樹齡超過650年的大銀杏，氣勢非凡。參拜後，推薦在參道上品嚐當地著名的「足利燒賣（不含肉的洋蔥燒賣）」或「馬鈴薯炒麵」，感受在地B級美食的魅力。', 
+                        nav: 'Bannaji Temple', highlight: '國寶本堂/日本百名城', travelInfo: '50km | 50分' 
                     },
                     { 
-                        id: 'd4-2', type: 'food', time: '11:30', title: '午餐：登利平 鳥飯', 
-                        desc: '群馬縣民無人不知的靈魂美食，甚至被稱為群馬縣的「縣民便當」。登利平的招牌「鳥飯」使用秘傳醬汁燒烤的薄切雞胸肉與雞腿肉，鋪滿在熱騰騰的白飯上。醬汁鹹甜適中，滲透進米飯裡，雞肉軟嫩不乾柴，簡單卻有著令人上癮的美味。對於自駕旅客來說，買一份在車上吃，或是去公園野餐，都是體驗群馬在地生活的最佳方式。', 
-                        nav: 'Torihei Honten', travelInfo: '120km | 2小時 (關越道)' 
+                        id: 'd4-2', type: 'food', time: '12:30', title: '午餐：高崎名物', 
+                        desc: '推薦嘗試群馬名物：\n1. 「登利平」鳥飯 (Torihei)：群馬縣民的靈魂便當，醬汁雞肉飯。\n2. 「高崎義大利麵」：以份量大、口味濃郁著稱。', 
+                        nav: 'Torihei Honten', travelInfo: '10km | 20分' 
                     },
                     { 
-                        id: 'd4-4', type: 'sight', time: '14:30', title: '魚沼之里', 
-                        desc: '位於以豪雪與頂級越光米聞名的新潟縣南魚沼市，是由知名清酒品牌「八海山」所營運的複合式園區。這裡最特別的是「雪室」，利用冬季堆積的龐大雪量來天然冷藏清酒與蔬菜，您可以參觀這個充滿先人智慧的設施。園區內散佈著風格洗鍊的咖啡廳、麵包店、社員食堂與販賣部，建築融入雪國風景中。冬季來訪時，這裡是一片銀白世界，您可以在雪景中品嚐使用清酒酒粕製作的甜點，享受優雅的午後時光。', 
-                        nav: 'Uonuma no Sato', highlight: '必逛：雪室、伴手禮', travelInfo: '15km | 20分' 
+                        id: 'd4-3', type: 'sight', time: '13:45', title: '少林山達摩寺', 
+                        desc: '這裡是日本吉祥物「高崎達摩（不倒翁）」的發源地。寺院依山而建，階梯兩旁與本堂周圍堆滿了無數遊客還願送回的達摩，景象壯觀且充滿福氣。高崎達摩以眉毛像鶴、鬍鬚像龜的特徵著稱，象徵長壽與吉利。您可以在這裡購買新的達摩，畫上左眼許願，待願望實現後再畫上右眼。寺內還設有一間小型博物館，展示日本各地不同造型的達摩。對於自駕旅行者來說，這裡是祈求「交通安全」與「旅途順利」的絕佳能量景點。', 
+                        nav: 'Shorinzan Darumaji', highlight: '達摩發源地', travelInfo: '120km | 2小時 (關越道)' 
+                    },
+                    { 
+                        id: 'd4-4', type: 'transport', time: '14:30', title: '前往南魚沼', 
+                        desc: '經由關越自動車道，穿越長長的「關越隧道」後，世界會瞬間變成銀白色的豪雪地帶 (川端康成《雪國》舞台)。請注意雪地駕駛。', 
+                        nav: 'Sakadojo', highlight: '穿越豪雪隧道', travelInfo: '抵達飯店' 
                     },
                     { 
                         id: 'd4-5', type: 'stay', time: '16:00', title: '坂戶城 溫泉旅館', 
-                        desc: '這裡是戰國時代上杉家名將、直江兼續的居城遺跡，位於六日町盆地的小山上。雖然天守閣已不復存在，但保留了石垣與土壘等遺跡。對於歷史迷來說，這裡是緬懷「愛」之武將的聖地。冬季時，整座城跡被厚厚的白雪覆蓋，從山腳仰望非常有氣勢。雖然冬季登山較困難，但您可以造訪山腳下的「坂戶城跡公園」或相關資料館，遙想當年戰國武將在雪國生存的艱辛與豪情。', 
+                        desc: '這是一間充滿歷史情懷的溫泉旅館，建立在戰國武將長尾政景（上杉景勝之父）的居城「坂戶城」遺址山腳下。旅館洋溢著大河劇般的懷舊氛圍，大廳展示著相關的甲冑與歷史文物。這裡的溫泉屬於「開運之湯」，露天風呂視野開闊，冬季可欣賞新潟著名的豪雪景致。餐點主打南魚沼產的特A級越光米與當地山海產，是整趟行程中最具「日式旅情」與歷史深度的住宿體驗。', 
                         nav: 'Sakadojo', highlight: '提早入住享受溫泉', travelInfo: '接駁/短程' 
                     },
                     { 
                         id: 'd4-6', type: 'food', time: '18:00', title: '晚餐：南魚沼越光米', 
-                        desc: '來到全日本最知名的「魚沼越光米」產地，晚餐的主角絕對是米飯。南魚沼的餐廳通常會標榜使用「釜戶炊煮」的特A級越光米，米粒晶瑩剔透，黏性與甜度皆是頂級。推薦搭配當地的鄉土料理，如「切蘿蔔乾煮物」、「烤岩魚」或是簡單的「飯糰」。如果您想吃好一點，這裡也有品質極佳的新潟和牛。在寒冷的冬夜，找一間當地的居酒屋或食堂，一口熱飯、一口地酒，是味蕾的極致享受。', 
+                        desc: '晚餐推薦名單：\n1. 「欅亭 (Keyaki Tei)」：極品洋食與米飯。\n2. 「魚沼釜蔵」：鄉土料理與地酒。', 
                         nav: 'Keyaki Tei', highlight: '推薦：Keyaki Tei 洋食' 
                     }
                 ]
             },
             {
                 id: 'day5', dayLabel: 'Day 5', date: '2/12 (四)', title: '工藝與能量', location: '南魚沼 -> 新潟',
-                coords: { lat: 37.6366, lon: 138.9616 }, // Sanjo
+                coords: { lat: 37.6366, lon: 138.9616 },
                 events: [
                     { id: 'd5-0', type: 'stay', time: '08:15', title: '出發：坂戶城', desc: '辦理退房，提早出發以免塞車。', nav: 'Sakadojo', highlight: '雪地駕車小心', travelInfo: '60km | 50分' },
                     { 
                         id: 'd5-1', type: 'sight', time: '09:45', title: '三条鍛冶道場', 
-                        desc: '新潟縣三条市是世界聞名的金屬加工與鍛造重鎮。這個道場是為了傳承鍛造技術而設，開放給一般遊客體驗。在這裡，您可以親手體驗製作「和釘」或「拆信刀」。在職人的指導下，將燒得火紅的鐵塊敲打成型，感受金屬的溫度與延展性，是非常難得的實作體驗。完成的作品可以帶回家作紀念。這裡也展示了各種精美的職人工具，是深度了解日本工藝精神的好地方。', 
+                        desc: '燕三條地區是世界聞名的金屬工藝聖地，這座道場是專門體驗鍛造文化的設施。不同於一般只能參觀的工廠，這裡提供遊客親手製作拆信刀或和釘的體驗（需預約）。在專業職人的指導下，您可以親自將燒得火紅的鐵塊敲打成型，感受金屬變化的過程。館內亦展示了各種三條生產的優質刀具、工具與農具。對於喜歡工藝或想深入了解日本職人精神的旅客，這裡是極具教育意義與互動樂趣的停留點，成品更是獨一無二的紀念品。', 
                         nav: 'Sanjo Blacksmith Dojo', highlight: '上午場只到11:00', travelInfo: '20km | 30分' 
                     },
                     { 
                         id: 'd5-2', type: 'sight', time: '11:00', title: '彌彥神社', 
-                        desc: '越後地區的一之宮，是新潟縣地位最高、香火最鼎盛的神社。神社座落在神聖的彌彥山腳下，被古老的杉木林環繞，氣氛莊嚴清幽。這裡供奉的天香山命是傳授農耕、製鹽與捕魚的神明。冬季時，參道兩旁的雪景與朱紅色的鳥居相互映襯，美不勝收。參拜完後，您可以搭乘附近的彌彥山纜車上山，眺望日本海與越後平原的遼闊景色，或是去附近的溫泉街泡個足湯。', 
+                        desc: '越後國的一宮，被當地人親切地稱為「彌彥樣」，是新潟縣內格調最高的神社。神社坐落在神山「彌彥山」山腳，四周被古老的杉樹林環繞，氣氛莊嚴清幽。這裡以祈求工作運、比賽運聞名，據說能量強大。拜殿莊嚴宏偉，在此參拜後，可以搭乘附近的彌彥山纜車登頂，俯瞰越後平原與日本海的絕景。冬季若積雪，朱紅色的鳥居在雪地中更顯醒目。彌彥溫泉街就在附近，參拜後可順道享受足湯或購買著名的「咖哩豆」當伴手禮。', 
                         nav: 'Yahiko Shrine', highlight: '午餐：釜飯彌醉亭 或 熊貓燒', travelInfo: '40km | 50分' 
                     },
                     { 
                         id: 'd5-3', type: 'sight', time: '15:30', title: 'Pier Bandai', 
-                        desc: '位於新潟市區、信濃川河口附近的超大型複合式市場，被譽為新潟的「食之主題樂園」。這裡集合了市場、迴轉壽司、鮮魚中心、肉舖與酒鋪。您可以在這裡買到剛上岸的新鮮海鮮、新潟和牛以及種類超齊全的新潟地酒。最推薦這裡的「弁慶」迴轉壽司，使用佐渡島直送的魚貨，CP值極高。自駕旅客可以在這裡大快朵頤，並購買米果、清酒等新潟特產作為伴手禮。', 
+                        desc: '被譽為「新潟的廚房」，是一個集合了水產市場、肉舖、農產與餐飲的大型複合設施。位於新潟市區萬代島，交通便利。這裡最大的亮點是極致新鮮的海鮮，尤其是迴轉壽司名店「弁慶」，經常大排長龍，能以實惠價格吃到佐渡產的肥美寒鰤魚與南蠻蝦。除了壽司，您也可以在市場買到新潟知名的越光米、清酒以及各式海鮮加工品。這裡也設有戶外燒烤區（季節限定），氣氛熱鬧，是午餐與採購新潟特產的最佳地點。', 
                         nav: 'Pier Bandai', highlight: '推薦：弁慶壽司、爆彈飯糰', travelInfo: '市區 | 10分' 
                     },
                     { 
                         id: 'd5-4', type: 'stay', time: '17:00', title: '東橫INN 新潟站前', 
-                        desc: '位於新潟交通樞紐的絕佳位置，距離新潟車站萬代口步行僅需幾分鐘。周邊是新潟最熱鬧的繁華街，居酒屋、拉麵店林立，晚餐選擇非常豐富。對於自駕者來說，飯店後方與周邊有配合的停車場。這間飯店的一大優點是方便前往「万代 City」商圈與「Pier Bandai」市場。早晨出發前，您可以在大廳享用簡單的飯糰早餐，補充滿滿的碳水化合物，為接下來的雪國自駕之旅做好準備。', 
+                        desc: '位於新潟交通樞紐，對於探索新潟市區極為便利。雖然是連鎖商務飯店，但新潟的東橫INN早餐通常會提供高品質的新潟米，這是一大亮點。周邊步行可達居酒屋街與拉麵店，方便品嚐新潟著名的「醬汁豬排丼」或「生薑醬油拉麵」。飯店擁有完善的停車設施（立體停車場），且緊鄰通往隔天長野方向的快速道路入口，是機能性極高的戰略住宿點。', 
                         nav: 'Toyoko Inn Niigata Ekimae', highlight: '', travelInfo: '步行' 
                     },
                     { 
                         id: 'd5-5', type: 'food', time: '18:00', title: '晚餐：新潟站前', 
-                        desc: '新潟車站前居酒屋激戰區。推薦嘗試新潟名物「醬汁豬排丼」(Tare-Katsu)，不同於長野，新潟版本是將薄切豬排沾滿甜鹹醬油醬汁，不加蛋液。此外，「布海苔蕎麥麵」(Hegi Soba) 也是必吃，麵條加入海藻，口感Q彈。', 
+                        desc: '新潟車站前居酒屋激戰區。推薦嘗試新潟名物「醬汁豬排丼」(Tare-Katsu)。', 
                         nav: 'Niigata Station', highlight: '推薦：炸豬排太郎(醬汁豬排)、須坂屋(布海苔蕎麥麵)' 
                     }
                 ]
             },
             {
                 id: 'day6', dayLabel: 'Day 6', date: '2/13 (五)', title: '野猿公苑與壽司', location: '新潟 -> 長野',
-                coords: { lat: 36.7329, lon: 138.4621 }, // Jigokudani
+                coords: { lat: 36.7329, lon: 138.4621 },
                 events: [
                     { id: 'd6-0', type: 'stay', time: '09:00', title: '出發：東橫INN 新潟站前', desc: '辦理退房，出發前往妙高/長野方向。', nav: 'Toyoko Inn Niigata Ekimae', highlight: '確認車況與雪胎', travelInfo: '110km | 1小時45分' },
                     { 
                         id: 'd6-1', type: 'transport', time: '10:45', title: '道之驛 Arai (午餐)', 
-                        desc: '位於上信越自動車道旁，是一個與高速公路休息站連通的「Highway Oasis」。這裡不僅是休息站，更像是一個美食聚落。最著名的是「Kito Kito 壽司」，提供來自富山灣的新鮮海鮮（如白蝦、螢烏賊）。此外，這裡還有拉麵店、Sukiya 以及販售新潟特產的市場。對於開車往返新潟與長野的旅客來說，這裡是最佳的午餐點。停車場非常大，即使是冬季雪天也會除雪完善。', 
+                        desc: '位於上信越自動車道旁，是一個與高速公路休息站連通的「Highway Oasis」。這裡不僅是休息站，更像是一個美食聚落。', 
                         nav: 'Roadside Station Arai', highlight: '必吃：白蝦/鰤魚/螃蟹', travelInfo: '休息站內' 
                     },
                     { id: 'd6-2', type: 'food', time: '12:00', title: 'Kito Kito 壽司', desc: '享用美味壽司午餐。平板點餐，出餐快速。', nav: 'Kito Kito Sushi Arai', highlight: '平板點餐', travelInfo: '45km | 45分' },
                     { id: 'd6-3', type: 'transport', time: '12:45', title: '前往野猿公苑', desc: '信州中野IC下，往志賀高原。', nav: 'Jigokudani Monkey Park Parking', highlight: 'MapCode: 341 740 584*55', travelInfo: '步行 1.6km (30分)' },
                     { 
                         id: 'd6-4', type: 'sight', time: '13:40', title: '地獄谷野猿公苑', 
-                        desc: '全球唯一可以看到野生猴子（日本獼猴）泡溫泉的地方，是長野縣冬季最國際化的景點。猴子們為了抵禦嚴寒，會跳入溫泉中取暖，一臉陶醉的表情非常療癒。要看到這個奇景，您需要從停車場步行約 30 分鐘的山路（冬季為雪道）。這裡沒有圍欄，猴子就在您腳邊自由活動，請務必遵守規則：不餵食、不觸摸、不對視。冬季造訪請務必穿著防滑雪靴，這段雪地健行將是旅程中難忘的冒險。', 
+                        desc: '世界唯一可以看到野生猴子泡溫泉的地方。位於志賀高原的山林深處，冬季時整個山谷被白雪覆蓋，當地的日本獼猴為了禦寒，會跳入露天溫泉中一臉享受地泡湯，這幅景象被外國遊客稱為「Snow Monkey」，聞名全球。從停車場需步行約30分鐘的山路才能抵達，冬季步道濕滑，建議穿著防滑雪靴。看著猴子們互相理毛、在溫泉中打瞌睡的模樣非常療癒，是冬季長野最不可錯過的生態奇觀。', 
                         nav: 'Jigokudani Monkey Park', highlight: '裝備：手套/毛帽/防滑鞋', travelInfo: '步行回程+駕車 (35km | 50分)' 
                     },
                     { id: 'd6-5', type: 'transport', time: '15:30', title: '前往長野市區', desc: '天黑前下山，前往飯店。', nav: 'Toyoko Inn Nagano-eki Higashi-guchi', highlight: '小心傍晚路況', travelInfo: '市區 | 10分' },
                     { 
                         id: 'd6-6', type: 'stay', time: '16:20', title: '東橫INN 長野站東口', 
-                        desc: '相較於熱鬧的善光寺口，東口屬於較新開發的區域，環境相對寧靜寬敞，道路規劃也較適合自駕者進出。這間東橫INN就在車站旁，飯店備有大型機械式停車塔。步行穿越車站通道即可抵達熱鬧的西口（善光寺口）覓食，享受車站大樓 MIDORI 的購物便利，卻又能保有住宿的安靜品質。是遊覽長野市區、善光寺與戶隱神社的理想基地。', 
+                        desc: '長野站東口相較於善光寺口較為清靜，道路寬敞，非常適合自駕者進出。這間飯店距離車站步行不到5分鐘，對於隔天要前往善光寺或地獄谷野猿公苑都相當順路。長野冬季寒冷，東橫INN穩定的暖氣與加濕器是必備設施。大廳寬敞，早餐通常會有信州味噌湯或當地漬物等簡單的鄉土風味。附近有租車公司據點與加油站，對於整備車輛相當方便。', 
                         nav: 'Toyoko Inn Nagano-eki Higashi-guchi', highlight: '機械停車塔', travelInfo: '步行' 
                     },
                     { 
                         id: 'd6-7', type: 'food', time: '18:00', title: '晚餐：長野站前', 
-                        desc: '兩大推薦：1. 「醬汁豬排丼」(明治亭)：這是長野縣駒根市的靈魂美食。將剛炸好、熱騰騰的厚切豬排，浸入特製的鹹甜醬汁中，鋪在堆滿高麗菜絲的白飯上，解膩又下飯。2. 「味噌家」(Misoya)：主打信州味噌拉麵，湯頭濃郁醇厚，鋪滿大火快炒過的豆芽菜，鑊氣十足。', 
+                        desc: '兩大推薦：1. 「醬汁豬排丼」(明治亭)。2. 「味噌家」(Misoya) 拉麵。', 
                         nav: 'Nagano Station', highlight: '推薦：明治亭(醬汁豬排)、味噌家(拉麵)' 
                     }
                 ]
             },
             {
                 id: 'day7', dayLabel: 'Day 7', date: '2/14 (六)', title: '安曇野與諏訪', location: '長野 -> 甲府',
-                coords: { lat: 36.0485, lon: 138.1130 }, // Suwa
+                coords: { lat: 36.0485, lon: 138.1130 },
                 events: [
                     { id: 'd7-0', type: 'stay', time: '09:00', title: '出發：東橫INN 長野', desc: '辦理退房。', nav: 'Toyoko Inn Nagano-eki Higashi-guchi', highlight: '', travelInfo: '60km | 50分' },
                     { 
                         id: 'd7-1', type: 'sight', time: '10:15', title: '穂高神社', 
-                        desc: '位於安曇野市，被北阿爾卑斯群山環抱的神社，供奉的是海神（穂高見命），守護著交通安全與產業繁榮，因此非常適合自駕旅客來此祈求行車平安。神社境內古木參天，氣氛空靈潔淨，被認為是強大的能量景點。這裡還有一尊獨特的「健康長壽道祖神」，是不銹鋼製成的現代藝術雕像。參拜後，不妨在周邊優美的安曇野田園風景中散步，感受北阿爾卑斯山的壯麗。', 
+                        desc: '位於安曇野市，被尊為「日本阿爾卑斯山的總鎮守」。主祭神是海神之子「穗高見命」，守護著這片壯麗的山脈與交通安全。神社境內古木參天，氣氛靜謐，其中一棵「孝養杉」樹齡超過500年，相當壯觀。這裡有獨特的「不銹鋼鳥居」與「道祖神」文化，反映了當地的信仰特色。由於緊鄰交通要道且守護交通安全，非常適合自駕旅客來此進行「車祓（為車子祈福）」或購買交通安全御守，祈求接下來的山路行程一路平安。', 
                         nav: 'Hotaka Shrine', highlight: '順遊大王山葵農場', travelInfo: '短程 | 10分' 
                     },
                     { 
                         id: 'd7-2', type: 'food', time: '11:30', title: '午餐：信州蕎麥麵', 
-                        desc: '長野縣（信州）是蕎麥麵的發源地之一，因地形高、溫差大且水質純淨，種出的蕎麥品質極佳。信州蕎麥麵的特色是香氣濃郁、口感滑順有嚼勁。在長野，您可以看到許多手打蕎麥麵店。吃法通常是冷麵沾醬汁，最後再喝下煮麵水，這是最道地的享受。冬季也有熱騰騰的湯麵選擇，搭配山菜或天婦羅。', 
+                        desc: '長野縣（信州）是蕎麥麵的發源地之一，因地形高、溫差大且水質純淨，種出的蕎麥品質極佳。', 
                         nav: 'Sobadokoro Kamijo', highlight: '推薦：そば処上條', travelInfo: '50km | 1小時' 
                     },
                     { 
                         id: 'd7-3', type: 'sight', time: '14:00', title: '立石公園 (諏訪湖)', 
-                        desc: '位於諏訪湖東北側的高地上，是俯瞰整個諏訪湖全景的最佳地點。這裡因為景色酷似動畫電影《你的名字》中「糸守湖」的黃昏場景而爆紅。無論是白天眺望日本阿爾卑斯山連峰倒映在湖面，還是黃昏時分欣賞夕陽將湖面染成金黃色，景色都極為震撼。這裡也是觀賞諏訪湖夜景的勝地。公園內設有大型溜滑梯，適合親子同樂。自駕可直接開車上山，有免費停車場。', 
+                        desc: '位於諏訪湖東側的高地上，是俯瞰諏訪湖全景的最佳地點。這裡因為景色酷似動畫電影《你的名字》中「糸守湖」的黃昏場景而爆紅，成為聖地巡禮的熱門景點。不僅白天能將壯闊的湖面與遠處的日本阿爾卑斯山盡收眼底，黃昏時分的夕陽與入夜後的夜景更是迷人，被選為「日本夜景遺產」。公園設有大型溜滑梯與展望台，雖然冬季風大寒冷，但那種開闊的視野與感動絕對值得一遊。', 
                         nav: 'Tateishi Park', highlight: '立石公園俯瞰全景', travelInfo: '60km | 1小時' 
                     },
                     { 
                         id: 'd7-4', type: 'stay', time: '17:15', title: 'Dormy Inn 甲府', 
-                        desc: '位於甲府市中心，距離甲府車站步行約 15 分鐘，是探索山梨縣的舒適據點。這間 Dormy Inn 最大的亮點是頂樓的天然溫泉「勝運之湯」，泉質為琥珀色的碳酸氫鹽泉，號稱「美人之湯」，露天風呂還能眺望甲府市景與遠處的富士山。飯店同樣提供免費的夜鳴拉麵。早餐非常豐盛，提供山梨縣特色的「餺飥麵」與「鳥内臟煮」，讓您在飯店內就能品嚐在地美味。', 
+                        desc: '位於山梨縣甲府市中心，這間Dormy Inn最令人期待的是頂樓的天然溫泉「勝運之湯」。甲府是武田信玄的領地，飯店位置極佳，步行可至甲府城跡。这里的溫泉是名副其實的「甲府黑湯」，水質呈琥珀色，保溫效果極佳。早餐是重頭戲，通常提供山梨名物「餺飥（Hoto麵）」與「雞雜煮」，讓您不需排隊名店也能吃到在地美食。當然，晚上的免費拉麵也是不可或缺的享受。', 
                         nav: 'Dormy Inn Kofu Marunouchi', highlight: '', travelInfo: '步行' 
                     },
                     { 
                         id: 'd7-5', type: 'food', time: '18:30', title: '晚餐：甲府餺飥麵', 
-                        desc: '山梨縣最具代表性的鄉土料理，相傳是戰國武將武田信玄的野戰食品。特徵是使用寬扁的麵條，加入大量的南瓜、蔬菜與豬肉，放入味噌湯底中燉煮。與一般烏龍麵不同，餺飥麵不需過冷水，直接燉煮讓湯頭變得濃稠，充滿蔬菜的甜味。在寒冷的甲府盆地冬天，一鍋熱滾滾的餺飥麵能迅速溫暖身體並補充營養，著名的店家如「小作」或「不動」都極具特色。', 
+                        desc: '山梨縣最具代表性的鄉土料理，相傳是戰國武將武田信玄的野戰食品。特徵是使用寬扁的麵條，加入大量的南瓜、蔬菜與豬肉。', 
                         nav: 'Kosaku Kofu Station', highlight: '推薦：小作 (南瓜餺飥)' 
                     }
                 ]
             },
             {
                 id: 'day8', dayLabel: 'Day 8', date: '2/15 (日)', title: '富士山與箱根', location: '甲府 -> 箱根',
-                coords: { lat: 35.4925, lon: 138.7562 }, // Kawaguchiko
+                coords: { lat: 35.4925, lon: 138.7562 },
                 events: [
                     { id: 'd8-0', type: 'stay', time: '09:00', title: '出發：Dormy Inn 甲府', desc: '辦理退房。', nav: 'Dormy Inn Kofu Marunouchi', highlight: '', travelInfo: '40km | 50分' },
                     { 
                         id: 'd8-1', type: 'sight', time: '10:00', title: '河口湖 大石公園', 
-                        desc: '位於河口湖北岸，是拍攝「逆富士」（富士山倒映在湖面）的絕佳地點之一。這裡一年四季都有不同的花卉前景，雖然冬季沒有著名的薰衣草或掃帚草，但冬季的空氣最為澄澈，看到完整富士山的機率最高。園區內的「河口湖自然生活館」擁有視野極佳的咖啡座。您可以在這裡買一支藍莓霜淇淋，背景襯著壯麗的雪白富士山，拍下最經典的打卡照。', 
+                        desc: '位於河口湖北岸，是眺望「富士山與河口湖」經典構圖的絕佳位置。這裡最著名的是夏季的薰衣草與秋季的掃帚草，但在冬季，這裡擁有極高的「富士山能見度」。冬日的空氣乾燥澄澈，富士山頂的積雪最為厚實完美，您可以在此拍出最清晰、無遮蔽的富士山全景。園區內的「河口湖自然生活館」販售藍莓霜淇淋與多種富士山周邊商品。早晨逆光較強，建議上午稍晚或下午前往，光線會更適合拍照。', 
                         nav: 'Oishi Park', highlight: '最佳拍照點', travelInfo: '10km | 20分' 
                     },
                     { 
                         id: 'd8-2', type: 'food', time: '11:30', title: '午餐：吉田烏龍麵', 
-                        desc: '富士吉田市的在地庶民美食，以「全日本最硬」的麵條著稱。這種烏龍麵條極粗且嚼勁十足，湯頭通常是味噌與醬油的混合，配料必定有燙高麗菜與馬肉，並佐以特製的辛辣調味醬「Suridane」。這原本是當地織布職人為了節省吃飯時間、又能耐餓而發明的料理。初次嘗試可能會對其硬度感到驚訝，但越嚼越香的麵粉味會讓人上癮。', 
+                        desc: '富士吉田市的在地庶民美食，以「全日本最硬」的麵條著稱。', 
                         nav: 'Kuranosuke', highlight: '推薦：蔵ノ介', travelInfo: '50km | 1小時15分' 
                     },
                     { 
                         id: 'd8-3', type: 'sight', time: '14:00', title: '箱根神社 & 平和鳥居', 
-                        desc: '座落在蘆之湖畔，擁有超過 1200 年歷史，是關東地區總鎮守。最著名的地標是矗立在湖水中的紅色「平和的鳥居」，在波光粼粼的湖水與背後富士山的襯托下，營造出神秘而神聖的氛圍，是箱根最熱門的拍照景點。神社境內古杉參天，空氣充滿芬多精。除了祈求開運厄除，這裡的「九頭龍神社」分社也以祈求良緣靈驗而聞名，吸引無數年輕男女前來參拜。', 
+                        desc: '箱根神社擁有超過1200年的歷史，是關東地區著名的能量景點（Power Spot），許多政商名流與武將皆曾來此祈願。神社隱身於茂密的杉木林中，氛圍神聖。最知名的地標是矗立在蘆之湖水面上的紅色「平和的鳥居」，在湖光山色的映襯下極具神祕感，是箱根最熱門的打卡點。若要在此拍照通常需要排隊。參拜後，可以沿著湖畔步道散策，感受箱根特有的靈氣與靜謐。', 
                         nav: 'Hakone Shrine', highlight: '經御殿場、仙石原', travelInfo: '20km | 40分 (下坡)' 
                     },
-                    { id: 'd8-4', type: 'stay', time: '17:00', title: '小田原 住宿', desc: '下山前往小田原。', nav: 'Odawara Station', highlight: '', travelInfo: '步行' },
+                    { 
+                        id: 'd8-4', type: 'stay', time: '17:00', title: '小田原 住宿', 
+                        desc: '小田原是新幹線停靠站也是箱根門戶，住宿選擇多樣。若預算許可，推薦車站直結的「天成園 小田原站別館」，擁有高空足湯與優質客房；若追求CP值，車站周邊也有多間商務旅館。住在小田原的優勢在於房價比箱根溫泉區親民許多，且晚餐選擇豐富，車站旁有「Minaka小田原」複合設施，充滿江戶風情且美食眾多。這裡距離隔天要去的鎌倉與江之島交通也非常順暢。', 
+                        nav: 'Odawara Station', highlight: '', travelInfo: '步行' 
+                    },
                     { 
                         id: 'd8-5', type: 'food', time: '18:00', title: '晚餐：小田原關東煮', 
-                        desc: '小田原是著名的魚板產地，利用當地豐富的漁獲製作的關東煮自然不同凡響。小田原關東煮的特色有三：一是必須使用小田原產的魚漿製品，二是湯頭鮮美清澈，三是食用時要沾「梅子味噌」醬。這個特製的梅子味噌，利用了小田原另一特產「梅子」，酸酸甜甜的口感讓關東煮吃起來更加清爽開胃。在冬夜裡點幾串熱呼呼的蘿蔔、魚餅與牛筋，配上清酒，是極致的享受。', 
+                        desc: '小田原是著名的魚板產地，利用當地豐富的漁獲製作的關東煮自然不同凡響。', 
                         nav: 'Odawara Oden Honten', highlight: '需預約' 
                     }
                 ]
             },
             {
-                id: 'day9', dayLabel: 'Day 9', date: '2/16 (一)', title: '湘南海岸', location: '小田原 -> 橫濱',
-                coords: { lat: 35.3192, lon: 139.5467 }, // Kamakura
+                id: 'day9', dayLabel: 'Day 9', date: '2/16 (一)', title: '江之島與橫濱夜景', location: '小田原 -> 橫濱',
+                coords: { lat: 35.3192, lon: 139.5467 },
                 events: [
-                    { id: 'd9-0', type: 'stay', time: '09:30', title: '出發：小田原', desc: '辦理退房，出發前往湘南。', nav: 'Odawara Station', highlight: '', travelInfo: '30km | 50分 (海岸)' },
+                    { id: 'd9-0', type: 'stay', time: '09:30', title: '出發：小田原', desc: '辦理退房，前往小田原城。', nav: 'Odawara Station', highlight: '', travelInfo: '短程' },
                     { 
-                        id: 'd9-1', type: 'sight', time: '09:30', title: '鎌倉高校前', 
-                        desc: '江之島電鐵的一個無人小站，卻因為動畫《灌籃高手》片頭曲中，櫻木花道與晴子揮手的平交道場景而紅遍全球。站在平交道前，看著復古的綠色電車駛過，背景是波光粼粼的湘南海岸與江之島，彷彿置身於青春的熱血回憶中。雖然景點不大，但那份感動是無可取代的。提醒您拍照時請務必注意交通安全，不要妨礙車輛通行。', 
-                        nav: 'Kamakurakokomae Station', highlight: '鎌倉高校前平交道', travelInfo: '10km | 30分' 
+                        id: 'd9-1', type: 'sight', time: '10:00', title: '小田原城', 
+                        desc: '難攻不落的戰國名城，曾是關東霸主北條氏五代的居城。現在的天守閣是昭和時代復原的，內部設有歷史博物館，展示甲冑、刀劍與北條氏的歷史故事。登上天守閣頂層，可以360度眺望相模灣的大海與箱根群山，視野極佳。2月份正好是城址公園內的梅花季節，小田原城的梅花與天守閣相映成趣，景色雅緻。此外，這裡也設有忍者體驗館，非常適合喜歡歷史與戰國文化的遊客。', 
+                        nav: 'Odawara Castle', highlight: '天守閣', travelInfo: '30km | 50分 (海岸)' 
                     },
                     { 
-                        id: 'd9-2', type: 'food', time: '10:30', title: '早午餐：Pacific DRIVE-IN', 
-                        desc: '位於七里濱海岸停車場內的超人氣海景咖啡廳，主打夏威夷風格料理。這裡擁有絕佳的視野，正對著江之島，天氣好時還能清楚看見富士山。店內招牌是蒜蓉蝦飯與各式鬆餅，口味非常道地。這裡原本就是為了「Drive-in」設計的，非常適合自駕旅客。在陽光普照的日子，買杯咖啡坐在戶外露台，吹著海風，看著衝浪客與老鷹飛翔，感受湘南海岸特有的悠閒與美式風情。', 
-                        nav: 'Pacific DRIVE-IN', highlight: '必吃：蒜味蝦飯', travelInfo: '5km | 20分' 
+                        id: 'd9-2', type: 'food', time: '12:30', title: '午餐：Coral Reef', 
+                        desc: '在國道134號沿線的知名海景餐廳享用午餐。', 
+                        nav: 'Coral Reef Moana Makai', highlight: '海景餐廳', travelInfo: '5km | 15分' 
                     },
                     { 
-                        id: 'd9-3', type: 'sight', time: '12:00', title: '鎌倉大佛', 
-                        desc: '位於高德院內，是日本國寶，也是鎌倉最顯著的象徵。這尊阿彌陀如來坐像高約 11.3 公尺，重達 121 噸，是著名的「露天大佛」。大佛面容慈祥，微微前傾，彷彿在俯瞰眾生。您可以付費進入大佛的「胎內」參觀，了解其鑄造工藝。與奈良大佛相比，鎌倉大佛更顯得古樸與堅毅，是日本佛教藝術的傑作。', 
-                        nav: 'Kotoku-in', highlight: '建議停長谷寺或鎌倉站', travelInfo: '25km | 40分' 
+                        id: 'd9-3', type: 'sight', time: '14:00', title: '鎌倉高校前 (灌籃高手)', 
+                        desc: '江之島電鐵（江ノ電）的一個小車站，卻因為動畫《灌籃高手》片頭曲中，櫻木花道與晴子揮手的平交道場景而聞名世界。這裡擁有「碧海、藍天、綠色電車」的完美畫面，在此拍照能重溫青春回憶。由於遊客眾多，建議遵守交通規則，不要站在馬路中間拍照。除了平交道，車站本身的月台就面對著七里濱海岸，在此等車看海，感受湘南海岸的陽光與海風，本身就是一種享受。', 
+                        nav: 'Kamakurakokomae Station', highlight: '灌籃高手平交道', travelInfo: '3km | 10分' 
                     },
                     { 
-                        id: 'd9-4', type: 'stay', time: '16:30', title: '東橫INN 橫濱體育場前', 
-                        desc: '位於橫濱市中心，地理位置極為優越。顧名思義，對面就是橫濱DeNA海灣之星的主場「橫濱體育場」，旁邊就是美麗的橫濱公園。從這裡步行至中華街僅需 3 分鐘，走到山下公園、紅磚倉庫等港區景點也都在步行範圍內。對於想在橫濱港區漫遊的旅客來說，這裡是CP值極高的住宿點。飯店旁有著名的「關內」車站，周邊充滿了明治時期的西洋建築與現代高樓交錯的獨特港都風情。', 
-                        nav: 'Toyoko Inn Yokohama Stadium Mae No.1', highlight: '', travelInfo: '步行' 
+                        id: 'd9-4', type: 'sight', time: '14:30', title: '江之島深度遊', 
+                        desc: '江之島是湘南海岸的地標，透過跨海大橋與陸地相連。深度遊建議購買「江之島1day周遊券（eno=pass）」，可利用手扶梯（ESCAR）輕鬆攻頂。島上有歷史悠久的江島神社（供奉弁財天，求財與演藝運）、充滿南洋風情的「山姆繆爾·科金苑」以及地標展望台「Sea Candle」，冬季夜晚會有盛大的點燈活動「湘南寶石」。島嶼最深處的「岩屋」海蝕洞充滿神祕氣氛，回程若不想走路，可搭乘「弁天丸」遊覽船直接回到橋頭，從海上欣賞江之島全貌。', 
+                        nav: 'Enoshima', highlight: '神社/燈塔/水族館', travelInfo: '30km | 1小時' 
                     },
                     { 
-                        id: 'd9-5', type: 'food', time: '18:00', title: '晚餐：橫濱中華街', 
-                        desc: '日本最大、也是東亞最大的中華街，擁有超過 500 家以上的餐廳與店舖。這裡充滿了濃厚的中國色彩，巨大的牌樓、紅色的燈籠與喧鬧的人聲。您可以品嚐到各式各樣的中華料理，從精緻的廣東飲茶、麻辣的四川料理到邊走邊吃的熊貓包子、糖炒栗子與炸芝麻球。對於自駕旅程的尾聲，來這裡大吃一頓，感受異國風情的熱鬧氛圍，是個快樂的句點。', 
-                        nav: 'Yokohama Chinatown', highlight: '推薦：橫濱大飯店、同發本館' 
+                        id: 'd9-5', type: 'transport', time: '17:00', title: '前往橫濱', 
+                        desc: '避開最晚的下班車潮，前往橫濱。', 
+                        nav: 'Toyoko Inn Yokohama Stadium Mae No.1', highlight: '前往飯店', travelInfo: '市區 | 10分' 
+                    },
+                    { 
+                        id: 'd9-6', type: 'stay', time: '18:00', title: '東橫INN 橫濱體育場前', 
+                        desc: '位於橫濱的精華地段，就在橫濱球場（DeNA海灣之星主場）正對面，距離中華街步行僅需3分鐘，距離紅磚倉庫與山下公園也在步行範圍內。雖然位於熱鬧區域，但飯店內部維持一貫的安靜與整潔。這裡是這趟旅程的最後一站，地理位置極佳，方便您在check-in後步行去中華街吃晚餐，或去港區看夜景。雖然停車位可能較滿，但周邊有許多大型公共停車場可供選擇。', 
+                        nav: 'Toyoko Inn Yokohama Stadium Mae No.1', highlight: 'Check-in', travelInfo: '計程車/步行' 
+                    },
+                    { 
+                        id: 'd9-7', type: 'sight', time: '18:40', title: 'YOKOHAMA AIR CABIN', 
+                        desc: '日本首座常設都市型纜車，連接JR櫻木町站前與運河公園（紅磚倉庫附近）。雖然單程僅約5分鐘，但它提供了前所未有的視角來欣賞橫濱港未來（Minato Mirai）的景色。纜車車廂設計現代且擁有大片玻璃窗，白天可俯瞰運河與遊步道，夜晚則能穿梭在摩天輪與大樓群的璀璨燈火之中，極具未來感。這不僅是交通工具，更是一個移動的觀景台，能大幅節省從車站走到紅磚倉庫的體力。', 
+                        nav: 'YOKOHAMA AIR CABIN', highlight: '橫濱夜景', travelInfo: '步行/短程' 
+                    },
+                    { 
+                        id: 'd9-8', type: 'food', time: '19:10', title: '晚餐：橫濱中華街', 
+                        desc: '纜車下車後，直接搭車或散步回中華街享用晚餐。', 
+                        nav: 'Yokohama Chinatown', highlight: '中華料理' 
                     }
                 ]
             },
@@ -372,45 +425,119 @@
             }
         ];
 
-        // --- IndexedDB ---
-        const DB_NAME = 'JapanTripDB';
-        const DB_VERSION = 1;
-        const STORE_NAME = 'userData';
-
-        const dbHelper = {
-            open: () => new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onupgradeneeded = (e) => {
-                    const db = e.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        // --- Utils & Services ---
+        
+        // 1. 壓縮圖片 (縮小尺寸但轉為 Blob 方便上傳)
+        const compressImageToBlob = (file, maxWidth = 800, quality = 0.7) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > maxWidth) {
+                            height *= maxWidth / width;
+                            width = maxWidth;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // 轉為 Blob 格式 (比 Base64 字串更好上傳)
+                        canvas.toBlob((blob) => {
+                            if (blob) resolve(blob);
+                            else reject(new Error("Canvas to Blob failed"));
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = (error) => reject(error);
                 };
-                request.onsuccess = (e) => resolve(e.target.result);
-                request.onerror = (e) => reject(e.target.error);
-            }),
-            save: async (id, data) => {
-                const db = await dbHelper.open();
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                tx.objectStore(STORE_NAME).put({ id, ...data });
-            },
-            get: async (id) => {
-                const db = await dbHelper.open();
-                return new Promise((resolve) => {
-                    const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(id);
-                    req.onsuccess = () => resolve(req.result);
+                reader.onerror = (error) => reject(error);
+            });
+        };
+
+        const ensureAuth = async () => {
+            if (!window.auth) throw new Error("Firebase auth not initialized");
+            if (window.auth.currentUser) return window.auth.currentUser.uid;
+            const cred = await window.firebaseModules.signInAnonymously(window.auth);
+            return cred.user.uid;
+        };
+
+        const subscribeToUserData = (callback) => {
+            if (!window.auth || !window.auth.currentUser) return () => {};
+            const { collection, onSnapshot } = window.firebaseModules;
+            // UPDATE: 使用共用路徑 trips/shared_kanto_2026/events，而非個人路徑
+            const eventsRef = collection(window.db, `trips/${SHARED_TRIP_ID}/events`);
+            return onSnapshot(eventsRef, (snapshot) => {
+                const data = {};
+                snapshot.forEach((doc) => {
+                    data[doc.id] = doc.data();
                 });
-            },
-            getAll: async () => {
-                const db = await dbHelper.open();
-                return new Promise((resolve) => {
-                    const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).getAll();
-                    req.onsuccess = () => resolve(req.result);
+                callback(data);
+            });
+        };
+
+        const saveEventData = async (eventId, data) => {
+            const { doc, setDoc } = window.firebaseModules;
+            await ensureAuth(); // 確保有登入
+            // UPDATE: 寫入共用路徑
+            const docRef = doc(window.db, `trips/${SHARED_TRIP_ID}/events`, eventId);
+            await setDoc(docRef, data, { merge: true });
+        };
+
+        // NEW: Upload to Firebase Storage
+        const uploadPhotoToStorage = async (file) => {
+            const { ref, uploadBytes, getDownloadURL } = window.firebaseModules;
+            await ensureAuth();
+            
+            // 1. 壓縮圖片
+            const blob = await compressImageToBlob(file);
+            
+            // 2. 建立儲存路徑 (trips/shared_kanto_2026/{timestamp}.jpg)
+            // UPDATE: Storage 也改成共用路徑，方便管理
+            const filename = `${Date.now()}.jpg`;
+            const storageRef = ref(window.storage, `trips/${SHARED_TRIP_ID}/${filename}`);
+            
+            // 3. 上傳
+            await uploadBytes(storageRef, blob);
+            
+            // 4. 取得公開下載連結
+            const url = await getDownloadURL(storageRef);
+            return url;
+        };
+
+        const subscribeToBudget = (callback) => {
+            if (!window.auth || !window.auth.currentUser) return () => {};
+            const { collection, onSnapshot } = window.firebaseModules;
+            // UPDATE: 使用共用路徑
+            const budgetRef = collection(window.db, `trips/${SHARED_TRIP_ID}/budget`);
+            return onSnapshot(budgetRef, (snapshot) => {
+                const items = [];
+                snapshot.forEach((doc) => {
+                    items.push({ id: Number(doc.id), ...doc.data() });
                 });
-            },
-            clear: async () => {
-                 const db = await dbHelper.open();
-                 const tx = db.transaction(STORE_NAME, 'readwrite');
-                 tx.objectStore(STORE_NAME).clear();
-            }
+                callback(items);
+            });
+        };
+
+        const addBudgetItem = async (item) => {
+            const { doc, setDoc } = window.firebaseModules;
+            await ensureAuth();
+            // UPDATE: 使用共用路徑
+            const docRef = doc(window.db, `trips/${SHARED_TRIP_ID}/budget`, item.id.toString());
+            await setDoc(docRef, { desc: item.desc, cost: item.cost });
+        };
+
+        const deleteBudgetItem = async (itemId) => {
+            const { doc, deleteDoc } = window.firebaseModules;
+            await ensureAuth();
+            // UPDATE: 使用共用路徑
+            const docRef = doc(window.db, `trips/${SHARED_TRIP_ID}/budget`, itemId.toString());
+            await deleteDoc(docRef);
         };
 
         // --- Components ---
@@ -420,12 +547,28 @@
 
             useEffect(() => {
                 if(coords) {
-                    fetchWeather(coords.lat, coords.lon).then(setWeather);
+                    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current_weather=true&timezone=Asia%2FTokyo`)
+                        .then(res => res.json())
+                        .then(data => setWeather(data.current_weather))
+                        .catch(e => console.error("Weather fetch failed", e));
                 }
             }, [coords]);
 
             if (!weather) return <div className="text-xs text-gray-500 flex items-center gap-1"><div className="spinner"></div> 載入天氣...</div>;
 
+            const weatherCodes = {
+                0: { label: '晴朗', icon: 'fa-sun', color: 'text-orange-400' },
+                1: { label: '多雲', icon: 'fa-cloud-sun', color: 'text-yellow-200' },
+                2: { label: '陰天', icon: 'fa-cloud', color: 'text-gray-400' },
+                3: { label: '陰天', icon: 'fa-cloud', color: 'text-gray-400' },
+                45: { label: '霧', icon: 'fa-smog', color: 'text-gray-300' },
+                48: { label: '霧淞', icon: 'fa-snowflake', color: 'text-white' },
+                51: { label: '細雨', icon: 'fa-cloud-rain', color: 'text-blue-300' },
+                61: { label: '下雨', icon: 'fa-umbrella', color: 'text-blue-400' },
+                71: { label: '下雪', icon: 'fa-snowflake', color: 'text-white' },
+                80: { label: '陣雨', icon: 'fa-cloud-showers-heavy', color: 'text-blue-500' },
+                95: { label: '雷雨', icon: 'fa-bolt', color: 'text-yellow-400' },
+            };
             const wCode = weatherCodes[weather.weathercode] || weatherCodes[0];
             
             return (
@@ -454,7 +597,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div className="bg-jp-dark p-4 rounded-xl shadow-lg border-l-4 border-purple-500">
                     <h3 className="text-white font-bold mb-2 flex items-center"><i className="fas fa-hotel mr-2 text-purple-400"></i>住宿清單</h3>
                     <div className="text-sm text-gray-300 space-y-2 max-h-60 overflow-y-auto">
@@ -469,7 +611,6 @@
                         <div className="flex justify-between border-b border-gray-700 pb-1"><span>2/16</span> <span className="text-white">東橫INN 橫濱</span></div>
                     </div>
                 </div>
-
                 <div className="bg-jp-dark p-4 rounded-xl shadow-lg border-l-4 border-red-500">
                     <h3 className="text-white font-bold mb-2 flex items-center"><i className="fas fa-phone mr-2 text-red-400"></i>緊急聯絡</h3>
                     <div className="grid grid-cols-2 gap-3 text-sm">
@@ -489,49 +630,50 @@
             const [total, setTotal] = useState(0);
 
             useEffect(() => {
-                dbHelper.get('budget').then(data => {
-                    if (data && data.items) setItems(data.items);
+                const unsubscribe = subscribeToBudget((updatedItems) => {
+                    setItems(updatedItems.sort((a, b) => b.id - a.id));
                 });
+                return () => { if(typeof unsubscribe === 'function') unsubscribe(); }
             }, []);
 
             useEffect(() => {
                 const sum = items.reduce((acc, item) => acc + Number(item.cost), 0);
                 setTotal(sum);
-                if (items.length > 0) dbHelper.save('budget', { items });
             }, [items]);
 
-            const addItem = () => {
+            const handleAddItem = async () => {
                 if (!newItem.desc || !newItem.cost) return;
-                setItems([{ ...newItem, id: Date.now() }, ...items]);
+                const item = {
+                    id: Date.now(),
+                    desc: newItem.desc,
+                    cost: newItem.cost
+                };
+                await addBudgetItem(item);
                 setNewItem({ desc: '', cost: '' });
-            };
-
-            const deleteItem = (id) => {
-                setItems(items.filter(i => i.id !== id));
             };
 
             return (
                 <div className="bg-jp-dark p-4 rounded-xl shadow-lg card-shadow animation-fade-in border border-white/5">
                     <h3 className="text-jp-gold font-bold mb-4 flex items-center justify-between">
-                        <span><i className="fas fa-wallet mr-2"></i>旅費記帳</span>
+                        <span><i className="fas fa-wallet mr-2"></i>旅費記帳 (雲端共用)</span>
                         <span className="text-2xl font-mono">¥{total.toLocaleString()}</span>
                     </h3>
                     <div className="flex gap-2 mb-4">
                         <input 
                             type="text" 
                             placeholder="項目 (如: 拉麵)" 
-                            className="flex-[2] p-3 text-sm bg-black/40 border-gray-700 rounded-lg focus:border-jp-gold transition-colors"
+                            className="flex-[2] p-3 text-sm bg-black/40 border-gray-700 rounded-lg focus:border-jp-gold transition-colors text-white"
                             value={newItem.desc}
                             onChange={e => setNewItem({...newItem, desc: e.target.value})}
                         />
                         <input 
                             type="number" 
                             placeholder="¥" 
-                            className="flex-1 p-3 text-sm bg-black/40 border-gray-700 rounded-lg focus:border-jp-gold transition-colors"
+                            className="flex-1 p-3 text-sm bg-black/40 border-gray-700 rounded-lg focus:border-jp-gold transition-colors text-white"
                             value={newItem.cost}
                             onChange={e => setNewItem({...newItem, cost: e.target.value})}
                         />
-                        <button onClick={addItem} className="bg-jp-gold text-black px-4 rounded-lg font-bold hover:bg-yellow-500 shadow-lg shadow-yellow-600/20 active:scale-95 transition-all">
+                        <button onClick={handleAddItem} className="bg-jp-gold text-black px-4 rounded-lg font-bold hover:bg-yellow-500 shadow-lg shadow-yellow-600/20 active:scale-95 transition-all">
                             <i className="fas fa-plus"></i>
                         </button>
                     </div>
@@ -541,7 +683,7 @@
                                 <span className="text-white">{item.desc}</span>
                                 <div className="flex items-center gap-3">
                                     <span className="font-mono text-gray-300">¥{Number(item.cost).toLocaleString()}</span>
-                                    <button onClick={() => deleteItem(item.id)} className="text-red-500 w-6 h-6 flex items-center justify-center bg-red-500/10 rounded-full hover:bg-red-500/30">
+                                    <button onClick={() => deleteBudgetItem(item.id)} className="text-red-500 w-6 h-6 flex items-center justify-center bg-red-500/10 rounded-full hover:bg-red-500/30">
                                         <i className="fas fa-times text-xs"></i>
                                     </button>
                                 </div>
@@ -553,23 +695,48 @@
             );
         };
 
-        const CardModal = ({ event, userData, onClose, onUpdateUserData }) => {
+        const CardModal = ({ event, userData, onClose }) => {
             const fileInputRef = useRef(null);
+            const [isUploading, setIsUploading] = useState(false);
             
-            const handlePhotoUpload = (e) => {
-                const file = e.target.files[0];
+            const handlePhotoUpload = async (e) => {
+                const file = e.target.files?.[0];
                 if (!file) return;
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    const newPhotos = [...(userData?.photos || []), reader.result];
-                    onUpdateUserData(event.id, { ...userData, photos: newPhotos });
-                };
-                reader.readAsDataURL(file);
+                setIsUploading(true);
+                try {
+                    // Upload to Storage
+                    const photoUrl = await uploadPhotoToStorage(file);
+                    
+                    const currentPhotos = userData?.photos || [];
+                    const newPhotos = [...currentPhotos, photoUrl];
+                    await saveEventData(event.id, { ...userData, photos: newPhotos });
+                } catch (error) {
+                    console.error("Upload failed", error);
+                    // Catch storage bucket missing error
+                    if (error.code === 'storage/object-not-found' || error.message.includes('bucket')) {
+                         alert("上傳失敗：請檢查 Firebase Console 是否已開啟 Storage 功能。\n(錯誤代碼: bucket-error)");
+                    } else if (error.code === 'storage/unauthorized' || error.code === 'permission-denied') {
+                         alert("上傳失敗：權限不足。請到 Firebase Console 更新 Rules，允許 trips/ 路徑的讀寫。");
+                    } else {
+                         alert("照片上傳失敗，請稍後再試。");
+                    }
+                } finally {
+                    setIsUploading(false);
+                }
             };
+
+            const handleNoteChange = async (val) => {
+                await saveEventData(event.id, { ...userData, notes: val });
+            };
+
+            const handleDeletePhoto = async (idxToDelete) => {
+                if(!userData?.photos) return;
+                const newPhotos = userData.photos.filter((_, i) => i !== idxToDelete);
+                await saveEventData(event.id, { ...userData, photos: newPhotos });
+            }
 
             const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.nav)}`;
             const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(event.nav)}`;
-
             const headerColor = {
                 transport: 'bg-jp-indigo', sight: 'bg-jp-red', food: 'bg-jp-gold', stay: 'bg-purple-600'
             }[event.type] || 'bg-gray-600';
@@ -578,7 +745,7 @@
                 <div className="fixed inset-0 z-[60] flex flex-col bg-[#121212] animation-slide-up">
                     <div className="relative h-64 shrink-0 bg-gray-800">
                         {userData?.photos && userData.photos.length > 0 ? (
-                            <img src={userData.photos[0]} className="w-full h-full object-cover opacity-80" />
+                            <img src={userData.photos[0]} className="w-full h-full object-cover opacity-80" alt="Cover" />
                         ) : (
                             <div className={`w-full h-full ${headerColor} opacity-50 flex items-center justify-center`}>
                                 <i className={`fas fa-image text-4xl text-white/30`}></i>
@@ -594,7 +761,6 @@
                             <h2 className="text-3xl font-bold text-white leading-tight shadow-black drop-shadow-md">{event.title}</h2>
                         </div>
                     </div>
-
                     <div className="flex-1 overflow-y-auto p-6 pb-24">
                         <div className="flex gap-3 mb-6">
                             <a href={navUrl} target="_blank" rel="noopener noreferrer" className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50 active:scale-95 transition-transform no-underline">
@@ -604,12 +770,10 @@
                                 <i className="fab fa-google"></i> 搜尋
                             </a>
                         </div>
-
                         <div className="mb-6">
                             <h3 className="text-jp-gold text-sm font-bold uppercase tracking-wider mb-2">關於此地</h3>
                             <p className="text-gray-300 leading-relaxed text-lg whitespace-pre-line">{event.desc}</p>
                         </div>
-
                         {event.highlight && (
                             <div className="mb-6 p-4 bg-jp-gold/10 border-l-4 border-jp-gold rounded-r-lg">
                                 <h3 className="text-jp-gold text-sm font-bold mb-1"><i className="fas fa-lightbulb mr-2"></i>攻略筆記</h3>
@@ -617,39 +781,35 @@
                                 {event.subInfo && <p className="text-gray-400 text-sm mt-1">{event.subInfo}</p>}
                             </div>
                         )}
-
                         <div className="mb-8">
                             <h3 className="text-jp-gold text-sm font-bold uppercase tracking-wider mb-2">我的備註</h3>
                             <textarea 
                                 className="w-full bg-gray-800 text-white p-4 rounded-xl border border-gray-700 focus:border-jp-gold min-h-[120px] text-base"
-                                placeholder="寫下旅行心情或備忘錄..."
-                                value={userData?.notes || ''}
-                                onChange={(e) => onUpdateUserData(event.id, { ...userData, notes: e.target.value })}
+                                placeholder="寫下旅行心情或備忘錄 (全體成員可見)..."
+                                defaultValue={userData?.notes || ''}
+                                onBlur={(e) => handleNoteChange(e.target.value)}
                             />
                         </div>
-
                         <div>
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-jp-gold text-sm font-bold uppercase tracking-wider">相簿 ({userData?.photos?.length || 0})</h3>
                                 <button 
-                                    onClick={() => fileInputRef.current.click()}
-                                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-white transition-colors border border-gray-700"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isUploading}
+                                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-white transition-colors border border-gray-700 flex items-center"
                                 >
-                                    <i className="fas fa-camera mr-2"></i>新增照片
+                                     {isUploading ? <span className="spinner mr-2"></span> : <i className="fas fa-camera mr-2"></i>}
+                                     {isUploading ? '處理中...' : '新增照片'}
                                 </button>
                                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handlePhotoUpload} />
                             </div>
-                            
                             <div className="grid grid-cols-2 gap-3">
                                 {userData?.photos?.map((photo, idx) => (
                                     <div key={idx} className="aspect-square rounded-xl bg-gray-800 overflow-hidden relative group shadow-lg">
-                                        <img src={photo} className="w-full h-full object-cover" />
+                                        <img src={photo} className="w-full h-full object-cover" alt={`Upload ${idx}`} />
                                         <button 
                                             className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg"
-                                            onClick={() => {
-                                                const newPhotos = userData.photos.filter((_, i) => i !== idx);
-                                                onUpdateUserData(event.id, { ...userData, photos: newPhotos });
-                                            }}
+                                            onClick={() => handleDeletePhoto(idx)}
                                         >
                                             <i className="fas fa-trash text-sm"></i>
                                         </button>
@@ -669,32 +829,28 @@
 
         const Card = ({ event, userData, onOpenModal }) => {
             const hasCover = userData?.photos && userData.photos.length > 0;
-            const coverImage = hasCover ? userData.photos[0] : null;
-
+            const coverImage = hasCover ? userData?.photos?.[0] : null;
             const styles = {
                 transport: { icon: 'fa-car', color: 'text-jp-indigo', border: 'border-jp-indigo' },
                 sight: { icon: 'fa-torii-gate', color: 'text-jp-red', border: 'border-jp-red' },
                 food: { icon: 'fa-utensils', color: 'text-jp-gold', border: 'border-jp-gold' },
                 stay: { icon: 'fa-bed', color: 'text-purple-400', border: 'border-purple-500' }
             }[event.type] || { icon: 'fa-circle', color: 'text-gray-400', border: 'border-gray-500' };
-
             const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.nav)}`;
 
             return (
                 <div className="relative pl-4 pb-8 group">
                     <div className="absolute left-[19px] top-8 bottom-0 w-0.5 bg-gray-800 group-last:hidden"></div>
-                    
                     <div 
                         onClick={onOpenModal}
-                        className={`relative rounded-xl overflow-hidden shadow-lg bg-jp-dark-gray active:scale-[0.98] transition-all duration-200 cursor-pointer border-l-4 ${styles.border}`}
+                        className={`relative rounded-xl overflow-hidden shadow-lg bg-jp-dark active:scale-[0.98] transition-all duration-200 cursor-pointer border-l-4 ${styles.border}`}
                     >
-                        {hasCover && (
+                        {hasCover && coverImage && (
                             <div className="absolute inset-0 z-0">
-                                <img src={coverImage} className="w-full h-full object-cover opacity-60" />
+                                <img src={coverImage} className="w-full h-full object-cover opacity-60" alt="Cover" />
                                 <div className="absolute inset-0 card-bg-gradient"></div>
                             </div>
                         )}
-
                         <div className="relative z-10 p-4">
                             <div className="flex items-start gap-3">
                                 <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-sm border border-white/10 shrink-0`}>
@@ -714,14 +870,11 @@
                                         </a>
                                     </div>
                                     <h3 className={`text-lg font-bold mb-1 truncate ${hasCover ? 'text-white shadow-black drop-shadow-md' : 'text-jp-light'}`}>{event.title}</h3>
-                                    <p className={`text-sm truncate ${hasCover ? 'text-gray-200' : 'text-gray-400'}`}>{event.desc}</p>
-                                    
-                                    {/* Highlight hidden in outer card, only in modal */}
+                                    <p className={`text-sm line-clamp-2 ${hasCover ? 'text-gray-200' : 'text-gray-400'}`}>{event.desc}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-
                     {event.travelInfo && (
                          <div className="absolute left-[38px] bottom-[2px] transform translate-y-1/2 z-0 pl-4 w-full">
                             <div className="flex items-center gap-2">
@@ -742,79 +895,98 @@
             const [userDataStore, setUserDataStore] = useState({});
             const [modalData, setModalData] = useState(null);
             const [activeTab, setActiveTab] = useState('itinerary');
+            const [isLoading, setIsLoading] = useState(true);
+            const [error, setError] = useState(null);
 
             useEffect(() => {
-                dbHelper.getAll().then(rows => {
-                    const map = {};
-                    if(rows) rows.forEach(row => map[row.id] = row);
-                    setUserDataStore(map);
-                });
+                const initAuthAndSync = async () => {
+                     try {
+                        if (!window.db) {
+                            await new Promise(r => setTimeout(r, 1000));
+                            if (!window.db) throw new Error("Firebase not initialized in window");
+                        }
+
+                        await ensureAuth();
+                        const unsubscribe = subscribeToUserData((data) => {
+                            setUserDataStore(data);
+                            setIsLoading(false);
+                        });
+                        return unsubscribe;
+                     } catch (e) {
+                         console.error("Auth/Sync failed", e);
+                         setIsLoading(false);
+                         if (e.code === 'auth/configuration-not-found' || e.code === 'auth/operation-not-allowed') {
+                             setError({
+                                title: "尚未啟用匿名登入",
+                                message: "Firebase Authentication 的「匿名登入」功能尚未開啟。",
+                                code: 'AUTH_CONFIG'
+                             });
+                         } else if (e.code === 'permission-denied') {
+                             setError({
+                                title: "權限不足",
+                                message: "請檢查 Firestore Rules 是否已允許 'trips' 資料夾的讀寫權限。",
+                                code: 'PERMISSION'
+                             });
+                         } else {
+                             setError({
+                                title: "資料庫連線錯誤",
+                                message: e.message || "未知錯誤",
+                             });
+                         }
+                     }
+                };
+                initAuthAndSync();
             }, []);
 
-            const handleUpdateUserData = (eventId, newData) => {
-                const updated = { ...userDataStore, [eventId]: newData };
-                setUserDataStore(updated);
-                dbHelper.save(eventId, newData);
-            };
+            if (error) {
+                return (
+                    <div className="min-h-screen bg-[#121212] flex flex-col items-center justify-center p-8 text-center text-white font-sans">
+                        <div className="w-16 h-16 rounded-full bg-red-900/50 flex items-center justify-center mb-4 text-red-400 text-3xl border border-red-500/30">
+                            <i className="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h2 className="text-xl font-bold mb-2 text-white">{error.title}</h2>
+                        <p className="text-gray-400 mb-6 max-w-md leading-relaxed text-sm whitespace-pre-line">{error.message}</p>
+                        
+                        {error.code === 'PERMISSION' && (
+                             <div className="bg-gray-800 p-6 rounded-xl text-left text-sm text-gray-300 w-full max-w-md border-l-4 border-jp-gold shadow-xl my-4">
+                                <h3 className="font-bold text-white mb-3 text-base flex items-center"><i className="fas fa-wrench mr-2 text-jp-gold"></i>如何修復？</h3>
+                                <p className="mb-2">資料庫位置已更改為共用群組，請更新 Firestore Rules：</p>
+                                <pre className="bg-black/50 p-2 rounded text-xs font-mono text-green-400 overflow-x-auto">
+match /trips/{'{'}tripId{'}'}/{'{'}document=**{'}'} {'{'} <br/>
+&nbsp;&nbsp;allow read, write: if request.auth != null; <br/>
+{'}'}
+                                </pre>
+                            </div>
+                        )}
 
-            const exportData = async () => {
-                const allData = await dbHelper.getAll();
-                const blob = new Blob([JSON.stringify(allData)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `JapanTrip2026_Backup_${new Date().toISOString().slice(0,10)}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            };
+                        <button onClick={() => window.location.reload()} className="mt-8 px-6 py-3 bg-jp-gold text-black font-bold rounded-lg hover:bg-yellow-500 transition-colors">
+                            <i className="fas fa-sync-alt mr-2"></i>重試
+                        </button>
+                    </div>
+                );
+            }
 
-            const importData = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = async (event) => {
-                    try {
-                        const data = JSON.parse(event.target.result);
-                        await dbHelper.clear();
-                        for (const item of data) {
-                             if(item.id === 'budget' && !item.items && item.items !== []) continue; 
-                             await dbHelper.save(item.id, item);
-                        }
-                        alert('備份還原成功！請重新整理。');
-                        window.location.reload();
-                    } catch (err) {
-                        alert('還原失敗');
-                    }
-                };
-                reader.readAsText(file);
-            };
-
-            const currentDay = initialItinerary.find(d => d.id === selectedDayId);
+            const currentDay = INITIAL_ITINERARY.find(d => d.id === selectedDayId);
+            if (!currentDay) return null;
 
             return (
-                <div className="min-h-screen bg-[#121212] pb-20 relative font-sans">
+                <div className="min-h-screen bg-[#121212] pb-20 relative font-sans text-jp-light">
                     <div className="sticky top-0 z-40 bg-[#121212]/90 backdrop-blur-md border-b border-white/5 pt-env-top">
                         <div className="px-4 py-3 flex justify-between items-center">
                             <div>
                                 <h1 className="text-white font-bold tracking-widest text-lg">2026 關東自駕</h1>
                                 <p className="text-xs text-gray-400 flex items-center gap-1">
                                     <i className="fas fa-map-marker-alt text-jp-red"></i> {currentDay.location.split(' ')[0]}
+                                    {isLoading && <span className="ml-2 spinner w-3 h-3"></span>}
                                 </p>
                             </div>
-                            {activeTab === 'itinerary' ? (
+                            {activeTab === 'itinerary' && (
                                 <WeatherWidget coords={currentDay.coords} />
-                            ) : (
-                                <div className="flex gap-4 text-gray-400">
-                                    <label><i className="fas fa-file-import cursor-pointer"></i><input type="file" className="hidden" onChange={importData} /></label>
-                                    <button onClick={exportData}><i className="fas fa-save"></i></button>
-                                </div>
                             )}
                         </div>
-                        
                         {activeTab === 'itinerary' && (
                             <div className="flex overflow-x-auto hide-scrollbar gap-2 px-4 pb-3">
-                                {initialItinerary.map(day => (
+                                {INITIAL_ITINERARY.map(day => (
                                     <button
                                         key={day.id}
                                         onClick={() => setSelectedDayId(day.id)}
@@ -831,7 +1003,6 @@
                             </div>
                         )}
                     </div>
-
                     <div className="p-4 pt-6">
                          {activeTab === 'itinerary' ? (
                             <div className="animation-fade-in pb-12">
@@ -849,23 +1020,20 @@
                                 <InfoTool />
                                 <BudgetTool />
                                 <div className="text-center text-xs text-gray-600 mt-8">
-                                    <p>資料儲存於瀏覽器 IndexedDB</p>
-                                    <p>請定期點擊上方 <i className="fas fa-save"></i> 備份資料</p>
+                                    <p>資料同步至 Firebase Firestore (共用群組)</p>
+                                    <p>照片儲存於 Firebase Storage (共用群組)</p>
                                 </div>
                              </div>
                          )}
                     </div>
-
                     {modalData && (
                         <CardModal 
                             event={modalData}
                             userData={userDataStore[modalData.id]}
                             onClose={() => setModalData(null)}
-                            onUpdateUserData={handleUpdateUserData}
                         />
                     )}
-
-                    <div className="fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10 pb-[env(safe-area-inset-bottom)] z-50">
+                    <div className="fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10 pb-env-bottom z-50">
                         <div className="flex justify-around items-center h-16">
                             <button onClick={() => setActiveTab('itinerary')} className={`${activeTab === 'itinerary' ? 'text-jp-gold' : 'text-gray-500'} flex flex-col items-center w-full active:scale-95 transition-transform`}>
                                 <i className="fas fa-route text-xl mb-1"></i><span className="text-[10px]">行程</span>
@@ -884,4 +1052,3 @@
     </script>
 </body>
 </html>
-
