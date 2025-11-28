@@ -2,62 +2,84 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 提示詞庫 (無限容量版)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 提示詞庫 (卡片版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #f3f4f6; padding-bottom: 100px; }
-        .card-img { width: 100%; height: auto; max-height: 300px; object-fit: contain; background: #000; border-radius: 8px 8px 0 0; }
-        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100; }
+        body { background-color: #f0f2f5; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
+        /* 卡片圖片設定：正方形裁切，整齊好看 */
+        .card-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #e5e7eb; }
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 200; white-space: nowrap; }
         .toast.show { opacity: 1; }
-        .loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #3498db; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-left: 10px; display: none;}
+        .loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #6366f1; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; display: none;}
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* 文字截斷 */
+        .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
     </style>
 </head>
 <body>
 
-    <div class="bg-indigo-600 text-white p-4 shadow-md sticky top-0 z-10 flex justify-between items-center">
-        <h1 class="text-lg font-bold">🚀 AI 詞庫 (Pro)</h1>
-        <div class="space-x-1">
-            <button onclick="exportData()" class="bg-indigo-500 hover:bg-indigo-400 text-white text-xs px-3 py-2 rounded border border-indigo-400">⬇ 備份</button>
-            <button onclick="document.getElementById('import-file').click()" class="bg-indigo-500 hover:bg-indigo-400 text-white text-xs px-3 py-2 rounded border border-indigo-400">⬆ 還原</button>
+    <div class="bg-indigo-600 text-white px-4 py-3 shadow-md sticky top-0 z-20 flex justify-between items-center">
+        <h1 class="text-lg font-bold tracking-wide">🎨 AI 詞庫</h1>
+        <div class="flex space-x-2">
+            <button onclick="exportData()" class="bg-indigo-500 active:bg-indigo-700 p-2 rounded text-xs border border-indigo-400">⬇ 備份</button>
+            <button onclick="document.getElementById('import-file').click()" class="bg-indigo-500 active:bg-indigo-700 p-2 rounded text-xs border border-indigo-400">⬆ 還原</button>
             <input type="file" id="import-file" style="display: none;" onchange="importData(this)">
         </div>
     </div>
 
-    <div id="app" class="p-4 max-w-md mx-auto space-y-4">
-        <div id="loading-state" class="text-center text-gray-500 mt-10">資料讀取中...</div>
-        <div id="empty-state" class="text-center text-gray-400 mt-10 hidden">
-            <p>目前沒有資料</p>
-            <p class="text-sm mt-2">容量已解鎖，盡情儲存吧！</p>
+    <div class="p-3">
+        <div id="loading-state" class="text-center text-gray-500 mt-10 text-sm">資料讀取中...</div>
+        
+        <div id="app" class="grid grid-cols-2 gap-3">
+            </div>
+
+        <div id="empty-state" class="text-center text-gray-400 mt-20 hidden col-span-2">
+            <p class="text-lg">📭</p>
+            <p class="text-sm mt-2">還沒有收藏，點擊右下角新增</p>
         </div>
     </div>
 
-    <div class="fixed bottom-6 right-6">
-        <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg text-3xl font-bold">+</button>
+    <div class="fixed bottom-6 right-6 z-30">
+        <button onclick="openModal()" class="bg-indigo-600 active:bg-indigo-800 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-xl text-3xl font-bold transition-transform active:scale-90 shadow-indigo-500/50">+</button>
     </div>
 
-    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-lg w-full max-w-md p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 class="text-xl font-bold mb-4">新增提示詞</h2>
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
             
-            <label class="block text-sm font-medium text-gray-700 mb-1">選擇圖片</label>
-            <div class="flex items-center space-x-2 mb-4">
-                <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md border border-gray-300 w-full text-center">
-                    📁 開啟圖庫
-                    <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFileSelect(this)">
-                </label>
-                <div id="loading" class="loader"></div>
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+                <h2 id="modal-title" class="text-lg font-bold text-gray-800">新增提示詞</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
             </div>
-            <img id="preview-img" class="w-full h-auto max-h-60 object-contain bg-gray-50 border border-gray-200 rounded mb-3 hidden">
-            <input type="hidden" id="base64-store">
 
-            <label class="block text-sm font-medium text-gray-700">提示詞 (Prompts)</label>
-            <textarea id="input-prompt" rows="5" placeholder="輸入提示詞..." class="mt-1 block w-full border border-gray-300 rounded-md p-2 mb-4"></textarea>
+            <div class="p-4 overflow-y-auto flex-1">
+                <input type="hidden" id="edit-id"> <label class="block text-xs font-bold text-gray-500 uppercase mb-1">預覽圖片</label>
+                <div class="mb-4 text-center">
+                    <img id="preview-img" class="w-full h-auto max-h-60 object-contain bg-gray-100 rounded border border-gray-200 hidden mx-auto">
+                    
+                    <div class="flex items-center justify-center mt-2 space-x-2">
+                        <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm px-4 py-2 rounded-lg border border-gray-300 transition-colors w-full text-center">
+                            📷 <span id="upload-text">選擇圖片</span>
+                            <input type="file" id="file-input" accept="image/*" class="hidden" onchange="handleFileSelect(this)">
+                        </label>
+                        <div id="loading" class="loader"></div>
+                    </div>
+                    <input type="hidden" id="base64-store">
+                </div>
 
-            <div class="flex justify-end space-x-3">
-                <button onclick="closeModal()" class="px-4 py-2 text-gray-500 hover:text-gray-700">取消</button>
-                <button onclick="saveData()" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">儲存</button>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">標題 (名稱)</label>
+                <input type="text" id="input-title" placeholder="例如：賽博龐克貓..." class="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none mb-4 font-bold">
+
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">提示詞 (Prompts)</label>
+                <textarea id="input-prompt" rows="5" placeholder="輸入咒語..." class="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono leading-relaxed"></textarea>
+            </div>
+
+            <div class="p-4 border-t flex justify-between items-center bg-gray-50 rounded-b-xl">
+                <button id="btn-delete" onclick="handleDelete()" class="text-red-500 text-sm font-medium px-2 py-2 hidden">刪除此卡片</button>
+                <div class="flex space-x-3 ml-auto">
+                    <button onclick="closeModal()" class="px-4 py-2 text-gray-500 text-sm font-medium hover:bg-gray-200 rounded-lg transition-colors">取消</button>
+                    <button onclick="saveData()" class="px-6 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 active:scale-95 transition-all">儲存</button>
+                </div>
             </div>
         </div>
     </div>
@@ -65,13 +87,12 @@
     <div id="toast" class="toast">✅ 訊息</div>
 
     <script>
-        // --- IndexedDB 核心設定 (這是讓容量變大的關鍵) ---
+        // --- IndexedDB 設定 (資料庫邏輯) ---
         const DB_NAME = 'AIPromptDB';
-        const DB_VERSION = 1;
+        const DB_VERSION = 1; // 保持版本號，資料結構是通用的
         const STORE_NAME = 'prompts';
         let db;
 
-        // 1. 初始化資料庫
         function initDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -83,14 +104,13 @@
                 };
                 request.onsuccess = (e) => {
                     db = e.target.result;
-                    render(); // 資料庫開好後，立刻讀取畫面
+                    render();
                     resolve(db);
                 };
                 request.onerror = (e) => reject('DB Error');
             });
         }
 
-        // 2. 讀取所有資料
         async function getAllData() {
             return new Promise((resolve) => {
                 const transaction = db.transaction([STORE_NAME], 'readonly');
@@ -101,18 +121,15 @@
             });
         }
 
-        // 3. 新增資料
-        async function addData(item) {
-            return new Promise((resolve, reject) => {
+        async function putData(item) {
+            return new Promise((resolve) => {
                 const transaction = db.transaction([STORE_NAME], 'readwrite');
                 const store = transaction.objectStore(STORE_NAME);
-                const request = store.add(item);
-                request.onsuccess = () => resolve();
-                request.onerror = (e) => reject(e);
+                store.put(item); // put 同時支援新增與修改 (只要有 id 就是修改)
+                transaction.oncomplete = () => resolve();
             });
         }
 
-        // 4. 刪除資料
         async function deleteData(id) {
             return new Promise((resolve) => {
                 const transaction = db.transaction([STORE_NAME], 'readwrite');
@@ -122,7 +139,6 @@
             });
         }
         
-        // 5. 清空資料庫 (還原用)
         async function clearDB() {
             return new Promise((resolve) => {
                 const transaction = db.transaction([STORE_NAME], 'readwrite');
@@ -132,51 +148,109 @@
             });
         }
 
-        // --- 畫面邏輯 ---
+        // --- 介面渲染邏輯 ---
+
+        let currentData = []; // 快取資料
 
         async function render() {
             const app = document.getElementById('app');
             const emptyState = document.getElementById('empty-state');
-            const loadingState = document.getElementById('loading-state');
+            document.getElementById('loading-state').classList.add('hidden');
             
-            loadingState.classList.add('hidden');
             app.innerHTML = '';
             
-            const prompts = await getAllData();
+            currentData = await getAllData();
 
-            if (prompts.length === 0) {
-                app.appendChild(emptyState);
+            if (currentData.length === 0) {
                 emptyState.classList.remove('hidden');
                 return;
             }
             emptyState.classList.add('hidden');
 
-            // 倒序顯示 (新的在上面)
-            prompts.reverse().forEach((item) => {
+            // 倒序顯示 (新的在最前面)
+            [...currentData].reverse().forEach((item) => {
                 const card = document.createElement('div');
-                card.className = 'bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden mb-4';
+                // 卡片樣式
+                card.className = 'bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col relative active:scale-[0.98] transition-transform duration-100';
                 
-                let imgHtml = item.img ? `<img src="${item.img}" class="card-img">` : '';
+                // 處理標題 (舊資料沒有標題的處理方式)
+                const displayTitle = item.title ? item.title : '未命名作品';
+                
+                // 圖片顯示 (點擊圖片打開編輯)
+                let imgHtml = item.img 
+                    ? `<img src="${item.img}" class="card-img cursor-pointer" onclick="openModal(${item.id})">` 
+                    : `<div class="card-img bg-gray-200 flex items-center justify-center text-gray-400 cursor-pointer" onclick="openModal(${item.id})">無圖片</div>`;
 
                 card.innerHTML = `
                     ${imgHtml}
-                    <div class="p-4">
-                        <div class="text-gray-800 text-sm mb-3 bg-gray-50 p-2 rounded border border-gray-100 font-mono break-all whitespace-pre-wrap">${item.text}</div>
-                        <div class="flex justify-between items-center mt-2">
-                            <button onclick="handleDelete(${item.id})" class="text-red-400 text-sm hover:text-red-600">刪除</button>
-                            <button onclick="copyText(this)" data-text="${item.text.replace(/"/g, '&quot;')}" class="bg-gray-800 text-white px-4 py-2 rounded-md text-sm font-bold active:scale-95 transition-transform">📋 複製</button>
-                        </div>
+                    
+                    <div class="p-2 flex flex-col flex-1">
+                        <div class="text-xs font-bold text-gray-800 mb-2 line-clamp-1 cursor-pointer" onclick="openModal(${item.id})">${displayTitle}</div>
+                        
+                        <button onclick="copyText(event, this)" data-text="${item.text.replace(/"/g, '&quot;')}" class="mt-auto w-full bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 rounded-lg py-1.5 text-xs font-bold flex items-center justify-center space-x-1 transition-colors">
+                            <span>📋</span> <span>複製</span>
+                        </button>
                     </div>
                 `;
                 app.appendChild(card);
             });
         }
 
-        // 處理圖片 (依然壓縮，但允許較高畫質)
+        // --- 互動功能 ---
+
+        // 開啟視窗 (新增 或 編輯)
+        function openModal(id = null) {
+            const modal = document.getElementById('modal');
+            const titleEl = document.getElementById('modal-title');
+            const uploadText = document.getElementById('upload-text');
+            const btnDelete = document.getElementById('btn-delete');
+            
+            // 重置表單
+            document.getElementById('edit-id').value = '';
+            document.getElementById('input-title').value = '';
+            document.getElementById('input-prompt').value = '';
+            document.getElementById('base64-store').value = '';
+            document.getElementById('preview-img').src = '';
+            document.getElementById('preview-img').classList.add('hidden');
+
+            if (id) {
+                // --- 編輯模式 ---
+                const item = currentData.find(d => d.id === id);
+                if (item) {
+                    document.getElementById('edit-id').value = item.id; // 存入 ID
+                    document.getElementById('input-title').value = item.title || '';
+                    document.getElementById('input-prompt').value = item.text;
+                    
+                    if (item.img) {
+                        document.getElementById('base64-store').value = item.img;
+                        document.getElementById('preview-img').src = item.img;
+                        document.getElementById('preview-img').classList.remove('hidden');
+                    }
+                    
+                    titleEl.innerText = '編輯卡片';
+                    uploadText.innerText = '更換圖片';
+                    btnDelete.classList.remove('hidden'); // 顯示刪除按鈕
+                }
+            } else {
+                // --- 新增模式 ---
+                titleEl.innerText = '新增卡片';
+                uploadText.innerText = '選擇圖片';
+                btnDelete.classList.add('hidden'); // 隱藏刪除按鈕
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        // 圖片壓縮處理
         function handleFileSelect(input) {
             const file = input.files[0];
             if (!file) return;
             document.getElementById('loading').style.display = 'inline-block';
+            
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
@@ -184,7 +258,7 @@
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     
-                    // 放寬限制到 1024px，畫質更好
+                    // 保持較好的畫質
                     const MAX_WIDTH = 1024; 
                     let width = img.width;
                     let height = img.height;
@@ -197,7 +271,6 @@
                     canvas.height = height;
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    // 品質提升到 0.85
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
                     
                     document.getElementById('preview-img').src = dataUrl;
@@ -210,41 +283,58 @@
             reader.readAsDataURL(file);
         }
 
+        // 儲存資料 (判斷是新增還是更新)
         async function saveData() {
+            const idStr = document.getElementById('edit-id').value;
+            const title = document.getElementById('input-title').value.trim();
             const img = document.getElementById('base64-store').value;
             const text = document.getElementById('input-prompt').value;
 
-            if (!text) { showToast('❌ 請輸入提示詞'); return; }
+            if (!text && !img) { showToast('❌ 請至少輸入內容或圖片'); return; }
+
+            const item = {
+                title: title,
+                img: img,
+                text: text,
+                date: new Date()
+            };
+
+            // 如果有 ID 代表是修改，要補上 ID
+            if (idStr) {
+                item.id = parseInt(idStr);
+            }
 
             try {
-                await addData({ img, text, date: new Date() });
+                await putData(item); // IndexedDB 會自動處理新增或更新
                 closeModal();
                 render();
-                // Reset
-                document.getElementById('base64-store').value = '';
-                document.getElementById('input-prompt').value = '';
-                document.getElementById('preview-img').classList.add('hidden');
-                document.getElementById('file-input').value = ''; 
-                showToast('✅ 儲存成功');
+                showToast(idStr ? '✅ 修改成功' : '✅ 新增成功');
             } catch (e) {
-                alert('儲存失敗，請回報錯誤');
-                console.error(e);
+                alert('儲存失敗');
             }
         }
 
-        async function handleDelete(id) {
-            if(confirm('確定要刪除嗎？')) {
-                await deleteData(id);
+        // 刪除目前編輯的這筆
+        async function handleDelete() {
+            const idStr = document.getElementById('edit-id').value;
+            if (!idStr) return;
+            
+            if(confirm('確定要刪除這張卡片嗎？此動作無法復原。')) {
+                await deleteData(parseInt(idStr));
+                closeModal();
                 render();
+                showToast('🗑️ 已刪除');
             }
         }
 
-        function copyText(btn) {
+        // 複製文字 (注意 event.stopPropagation 防止點擊按鈕時觸發開窗)
+        function copyText(e, btn) {
+            e.stopPropagation(); // 阻止事件冒泡 (不會打開編輯視窗)
             const text = btn.getAttribute('data-text');
-            navigator.clipboard.writeText(text).then(() => showToast('✅ 已複製！'));
+            navigator.clipboard.writeText(text).then(() => showToast('已複製到剪貼簿！'));
         }
 
-        // --- 備份與還原 (針對大量資料優化) ---
+        // --- 備份還原 ---
         async function exportData() {
             const data = await getAllData();
             if (data.length === 0) { showToast('沒有資料可備份'); return; }
@@ -253,7 +343,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `PromptBackup_${new Date().toISOString().slice(0,10)}.json`;
+            a.download = `CardsBackup_${new Date().toISOString().slice(0,10)}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -267,12 +357,13 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     if (Array.isArray(data)) {
-                        if(confirm('匯入將會「清空並覆蓋」現有資料，確定嗎？')) {
+                        if(confirm('警告：匯入將會「清空目前所有資料」並覆蓋。確定嗎？')) {
                             await clearDB();
-                            // 逐筆寫入
                             for (let item of data) {
-                                delete item.id; // 重置 ID 避免衝突
-                                await addData(item);
+                                // 移除舊 ID 讓資料庫重配，或者保留 ID (這裡選擇移除以避免衝突)
+                                // 如果你是要完美遷移，保留 title 欄位
+                                delete item.id; 
+                                await putData(item);
                             }
                             render();
                             showToast('✅ 還原成功！');
@@ -284,8 +375,6 @@
             input.value = ''; 
         }
 
-        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
         function showToast(msg) {
             const toast = document.getElementById('toast');
             toast.innerText = msg;
@@ -293,7 +382,6 @@
             setTimeout(() => toast.classList.remove('show'), 2000);
         }
 
-        // 啟動資料庫
         initDB();
     </script>
 </body>
