@@ -71,9 +71,9 @@
 <script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/"
   }
 }
@@ -597,6 +597,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div className="bg-jp-dark p-4 rounded-xl shadow-lg border-l-4 border-purple-500">
                     <h3 className="text-white font-bold mb-2 flex items-center"><i className="fas fa-hotel mr-2 text-purple-400"></i>住宿清單</h3>
                     <div className="text-sm text-gray-300 space-y-2 max-h-60 overflow-y-auto">
@@ -611,6 +612,7 @@
                         <div className="flex justify-between border-b border-gray-700 pb-1"><span>2/16</span> <span className="text-white">東橫INN 橫濱</span></div>
                     </div>
                 </div>
+
                 <div className="bg-jp-dark p-4 rounded-xl shadow-lg border-l-4 border-red-500">
                     <h3 className="text-white font-bold mb-2 flex items-center"><i className="fas fa-phone mr-2 text-red-400"></i>緊急聯絡</h3>
                     <div className="grid grid-cols-2 gap-3 text-sm">
@@ -830,17 +832,20 @@
         const Card = ({ event, userData, onOpenModal }) => {
             const hasCover = userData?.photos && userData.photos.length > 0;
             const coverImage = hasCover ? userData?.photos?.[0] : null;
+
             const styles = {
                 transport: { icon: 'fa-car', color: 'text-jp-indigo', border: 'border-jp-indigo' },
                 sight: { icon: 'fa-torii-gate', color: 'text-jp-red', border: 'border-jp-red' },
                 food: { icon: 'fa-utensils', color: 'text-jp-gold', border: 'border-jp-gold' },
                 stay: { icon: 'fa-bed', color: 'text-purple-400', border: 'border-purple-500' }
             }[event.type] || { icon: 'fa-circle', color: 'text-gray-400', border: 'border-gray-500' };
+
             const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.nav)}`;
 
             return (
-                <div className="relative pl-4 pb-8 group">
+                <div className="relative pl-4 pb-4 group">
                     <div className="absolute left-[19px] top-8 bottom-0 w-0.5 bg-gray-800 group-last:hidden"></div>
+                    
                     <div 
                         onClick={onOpenModal}
                         className={`relative rounded-xl overflow-hidden shadow-lg bg-jp-dark active:scale-[0.98] transition-all duration-200 cursor-pointer border-l-4 ${styles.border}`}
@@ -851,13 +856,14 @@
                                 <div className="absolute inset-0 card-bg-gradient"></div>
                             </div>
                         )}
+
                         <div className="relative z-10 p-4">
                             <div className="flex items-start gap-3">
                                 <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-sm border border-white/10 shrink-0`}>
                                     <i className={`fas ${styles.icon} ${hasCover ? 'text-white' : styles.color}`}></i>
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-start">
+                                    <div className="flex justify-between items-start mb-2">
                                         <span className={`text-xs font-mono tracking-wide ${hasCover ? 'text-gray-200' : 'text-gray-400'}`}>{event.time}</span>
                                         <a 
                                             href={navUrl} 
@@ -869,23 +875,21 @@
                                             <i className="fas fa-location-arrow text-[10px]"></i> 導航
                                         </a>
                                     </div>
+                                    
+                                    {/* Travel Info moved to Top Inside Card */}
+                                    {event.travelInfo && (
+                                        <div className="mb-2 inline-flex items-center gap-2 bg-black/40 px-2 py-1.5 rounded-lg border border-white/5 backdrop-blur-sm">
+                                            <i className="fas fa-route text-jp-gold text-xs"></i>
+                                            <span className="text-xs text-gray-300 font-mono tracking-tight">{event.travelInfo}</span>
+                                        </div>
+                                    )}
+
                                     <h3 className={`text-lg font-bold mb-1 truncate ${hasCover ? 'text-white shadow-black drop-shadow-md' : 'text-jp-light'}`}>{event.title}</h3>
                                     <p className={`text-sm line-clamp-2 ${hasCover ? 'text-gray-200' : 'text-gray-400'}`}>{event.desc}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    {event.travelInfo && (
-                         <div className="absolute left-[38px] bottom-[2px] transform translate-y-1/2 z-0 pl-4 w-full">
-                            <div className="flex items-center gap-2">
-                                <div className="h-[1px] w-4 bg-gray-700 shrink-0"></div>
-                                <div className="flex items-center bg-gray-800 text-gray-300 px-2 py-1 rounded-full border border-gray-700 shadow-sm max-w-[85%]">
-                                    <i className="fas fa-car text-[10px] mr-2 text-gray-400 shrink-0"></i>
-                                    <span className="text-[10px] whitespace-nowrap font-mono overflow-hidden text-ellipsis">{event.travelInfo}</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
             );
         };
